@@ -13,7 +13,9 @@ This is the base code that will be used during the bridge and jumpstart program.
 
 ## Demo Accounts
 Borrower	maria.santos@university.edu.ph	Campus123	/Borrower/Dashboard
+
 Custodian	carlos.diaz@university.edu.ph	Campus123	/Custodian/Dashboard
+
 Administrator	ana.reyes@university.edu.ph	Campus123	/Monitoring/Dashboard
 
 ## Code Structure
