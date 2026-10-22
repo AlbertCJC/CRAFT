@@ -12,11 +12,11 @@ This is the base code that will be used during the bridge and jumpstart program.
 4.  Clean and ReBuild the solution.
 
 ## Demo Accounts
-Borrower	maria.santos@university.edu.ph	Campus123	/Borrower/Dashboard
+Borrower	maria.santos@university.edu.ph	Campus123
 
-Custodian	carlos.diaz@university.edu.ph	Campus123	/Custodian/Dashboard
+Custodian	carlos.diaz@university.edu.ph	Campus123
 
-Administrator	ana.reyes@university.edu.ph	Campus123	/Monitoring/Dashboard
+Administrator	ana.reyes@university.edu.ph	Campus123
 
 ## Code Structure
 
