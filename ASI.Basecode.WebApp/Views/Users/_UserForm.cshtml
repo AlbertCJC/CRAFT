@@ -1,56 +1,61 @@
 @using ASI.Basecode.Services.ViewModelClasses
+@using Microsoft.AspNetCore.Mvc.Rendering
 @model UserFormViewModel
 
-<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+<div asp-validation-summary="ModelOnly" class="banner err" style="margin-bottom:14px"></div>
+<input type="hidden" asp-for="UserId" />
 
-<div class="row mb-3">
-    <div class="col-md-6">
-        <label asp-for="FirstName" class="form-label fw-semibold">First Name *</label>
-        <input asp-for="FirstName" class="form-control" placeholder="e.g. Maria" />
-        <span asp-validation-for="FirstName" class="text-danger small"></span>
+<div class="frow">
+    <div class="field">
+        <div class="flabel">First Name<div class="req">*</div></div>
+        <input asp-for="FirstName" class="input" style="width:100%" placeholder="e.g. Maria" />
+        <span asp-validation-for="FirstName" class="fielderr"></span>
     </div>
-    <div class="col-md-6">
-        <label asp-for="LastName" class="form-label fw-semibold">Last Name *</label>
-        <input asp-for="LastName" class="form-control" placeholder="e.g. Santos" />
-        <span asp-validation-for="LastName" class="text-danger small"></span>
+    <div class="field">
+        <div class="flabel">Last Name<div class="req">*</div></div>
+        <input asp-for="LastName" class="input" style="width:100%" placeholder="e.g. Santos" />
+        <span asp-validation-for="LastName" class="fielderr"></span>
     </div>
 </div>
 
-<div class="row mb-3">
-    <div class="col-md-6">
-        <label asp-for="AccountIdentifier" class="form-label fw-semibold">Account Identifier *</label>
-        <input asp-for="AccountIdentifier" class="form-control" placeholder="e.g. 2023-104857 or EMP-2021-0134" />
-        <div class="form-text">School or employee ID. Must be unique across the system.</div>
-        <span asp-validation-for="AccountIdentifier" class="text-danger small"></span>
+<div class="frow">
+    <div class="field">
+        <div class="flabel">Account Identifier<div class="req">*</div></div>
+        <input asp-for="AccountIdentifier" class="input" style="width:100%" placeholder="e.g. 2023-104857 or EMP-2021-0134" />
+        <div class="hint">School or employee ID. Must be unique across the system.</div>
+        <span asp-validation-for="AccountIdentifier" class="fielderr"></span>
     </div>
-    <div class="col-md-6">
-        <label asp-for="SchoolEmail" class="form-label fw-semibold">School Email *</label>
-        <input asp-for="SchoolEmail" type="email" class="form-control" placeholder="e.g. ml.santos@university.edu.ph" />
-        <div class="form-text">Must be unique across the system.</div>
-        <span asp-validation-for="SchoolEmail" class="text-danger small"></span>
-    </div>
-</div>
-
-<div class="row mb-3">
-    <div class="col-md-4">
-        <label asp-for="RoleId" class="form-label fw-semibold">Role *</label>
-        <select asp-for="RoleId" class="form-select" asp-items="@(ViewBag.RoleOptions as SelectList)"></select>
-        <span asp-validation-for="RoleId" class="text-danger small"></span>
-    </div>
-    <div class="col-md-4">
-        <label asp-for="DepartmentId" class="form-label fw-semibold">Department</label>
-        <select asp-for="DepartmentId" class="form-select" asp-items="@(ViewBag.DepartmentOptions as SelectList)"></select>
-        <div class="form-text">Optional. For most users it is their college or office.</div>
-        <span asp-validation-for="DepartmentId" class="text-danger small"></span>
-    </div>
-    <div class="col-md-4">
-        <label asp-for="AccountStatusId" class="form-label fw-semibold">Account Status *</label>
-        <select asp-for="AccountStatusId" class="form-select" asp-items="@(ViewBag.StatusOptions as SelectList)"></select>
-        <span asp-validation-for="AccountStatusId" class="text-danger small"></span>
+    <div class="field">
+        <div class="flabel">School Email<div class="req">*</div></div>
+        <input asp-for="SchoolEmail" type="email" class="input" style="width:100%" placeholder="e.g. maria.santos@university.edu.ph" />
+        <div class="hint">Must be unique across the system.</div>
+        <span asp-validation-for="SchoolEmail" class="fielderr"></span>
     </div>
 </div>
 
-<div class="text-end">
-    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
-    <button type="submit" class="btn btn-success">Save User</button>
+<div class="frow">
+    <div class="field">
+        <div class="flabel">Role<div class="req">*</div></div>
+        <select asp-for="RoleId" class="input" style="width:100%" asp-items="@(ViewBag.RoleOptions as SelectList)"></select>
+        <span asp-validation-for="RoleId" class="fielderr"></span>
+    </div>
+    <div class="field">
+        <div class="flabel">Department</div>
+        <select asp-for="DepartmentId" class="input" style="width:100%" asp-items="@(ViewBag.DepartmentOptions as SelectList)"></select>
+        <div class="hint">Optional. For most users it is their college or office.</div>
+        <span asp-validation-for="DepartmentId" class="fielderr"></span>
+    </div>
+    <div class="field">
+        <div class="flabel">Account Status<div class="req">*</div></div>
+        <select asp-for="AccountStatusId" class="input" style="width:100%" asp-items="@(ViewBag.StatusOptions as SelectList)"></select>
+        <span asp-validation-for="AccountStatusId" class="fielderr"></span>
+    </div>
+</div>
+
+<div class="acts">
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary">
+        <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <div>Save User</div>
+    </button>
 </div>

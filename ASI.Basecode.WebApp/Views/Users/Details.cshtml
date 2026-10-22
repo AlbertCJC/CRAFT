@@ -2,70 +2,80 @@
 @model User
 @{
     ViewData["Title"] = "User Details";
-    var statusBadgeClass = Model.AccountStatus?.Code switch
+    var statusCode = Model.AccountStatus?.Code;
+    var statusBg = statusCode switch
     {
-        "ACTIVE" => "bg-success-subtle text-success",
-        "INACTIVE" => "bg-secondary-subtle text-secondary",
-        "SUSPENDED" => "bg-danger-subtle text-danger",
-        "LOCKED" => "bg-warning-subtle text-warning",
-        _ => "bg-secondary-subtle text-secondary",
+        "ACTIVE" => "#EAF5EF",
+        "SUSPENDED" => "#FBEAEA",
+        "LOCKED" => "#FDF3E1",
+        "UNVERIFIED" => "#FDF3E1",
+        _ => "#EEF2F0",
+    };
+    var statusFg = statusCode switch
+    {
+        "ACTIVE" => "#0B5D3E",
+        "SUSPENDED" => "#8E2F2F",
+        "LOCKED" => "#8A5D0F",
+        "UNVERIFIED" => "#8A5D0F",
+        _ => "#3E514A",
     };
     var initials = (string.IsNullOrWhiteSpace(Model.FirstName) ? string.Empty : Model.FirstName.Trim().Substring(0, 1).ToUpperInvariant())
         + (string.IsNullOrWhiteSpace(Model.LastName) ? string.Empty : Model.LastName.Trim().Substring(0, 1).ToUpperInvariant());
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">@Model.FirstName @Model.LastName <span class="text-muted small">(@Model.AccountIdentifier)</span></h2>
+<div class="page-hd">
     <div>
-        <a asp-action="Edit" asp-route-id="@Model.UserId" class="btn btn-sm btn-success">Edit</a>
-        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Back to List</a>
+        <div class="crumb"><div>CRAFT</div><div>/</div><div>Users</div><div>/</div><div class="cur">@Model.FirstName @Model.LastName</div></div>
+        <div class="title">@Model.FirstName @Model.LastName</div>
+        <div class="subtitle">@Model.AccountIdentifier &middot; @(Model.Role?.RoleName ?? "No role")</div>
+    </div>
+    <div class="hd-actions">
+        <a asp-action="Edit" asp-route-id="@Model.UserId" class="btn btn-primary">Edit</a>
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">Profile</div>
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <span class="badge rounded-circle bg-primary-subtle text-primary me-3 p-3 fs-5"
-                          style="min-width: 3.2rem; min-height: 3.2rem; display: inline-flex; align-items: center; justify-content: center;">
-                        @initials
-                    </span>
-                    <div>
-                        <div class="fw-semibold">@(Model.FirstName) @(Model.LastName)</div>
-                        <div class="text-muted small">@Model.SchoolEmail</div>
+<div class="row" style="gap:20px;align-items:flex-start">
+    <div style="flex:1;min-width:0">
+        <div class="card">
+            <div class="card-bd" style="padding:18px 20px">
+                <div style="display:flex;align-items:center;gap:16px">
+                    <div class="avatar" style="width:60px;height:60px;font-size:20px;border-radius:16px">@(string.IsNullOrWhiteSpace(initials) ? "U" : initials)</div>
+                    <div style="min-width:0">
+                        <div style="font-size:17px;font-weight:700">@Model.FirstName @Model.LastName</div>
+                        <div class="hint" style="overflow-wrap:anywhere">@Model.SchoolEmail</div>
+                        <div style="display:flex;gap:7px;margin-top:8px;flex-wrap:wrap">
+                            <div class="badge" style="background:#E6F1F5;color:#245C6E"><div class="dot"></div>@(Model.Role?.RoleName ?? "No role")</div>
+                            <div class="badge" style="background:@statusBg;color:@statusFg"><div class="dot"></div>@(Model.AccountStatus?.Description ?? "-")</div>
+                        </div>
                     </div>
                 </div>
-                <dl class="row mb-0">
-                    <dt class="col-sm-4">School / Account ID</dt>
-                    <dd class="col-sm-8">@Model.AccountIdentifier</dd>
+            </div>
+        </div>
 
-                    <dt class="col-sm-4">School Email</dt>
-                    <dd class="col-sm-8">@Model.SchoolEmail</dd>
-                </dl>
+        <div class="card">
+            <div class="card-hd"><div class="card-hd-txt"><div class="card-title">Profile</div></div></div>
+            <div class="card-bd">
+                <div class="kv">
+                    <div class="kv-row"><div class="kv-k">School / Account ID</div><div class="kv-v">@Model.AccountIdentifier</div></div>
+                    <div class="kv-row"><div class="kv-k">School Email</div><div class="kv-v">@Model.SchoolEmail</div></div>
+                    <div class="kv-row"><div class="kv-k">Contact Number</div><div class="kv-v">@(string.IsNullOrWhiteSpace(Model.ContactNumber) ? "-" : Model.ContactNumber)</div></div>
+                    <div class="kv-row last"><div class="kv-k">Alternate Contact</div><div class="kv-v">@(string.IsNullOrWhiteSpace(Model.AlternateContact) ? "-" : Model.AlternateContact)</div></div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">Account</div>
-            <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-4">Role</dt>
-                    <dd class="col-sm-8">@(Model.Role?.RoleName ?? "—")</dd>
 
-                    <dt class="col-sm-4">Department</dt>
-                    <dd class="col-sm-8">@(Model.Department?.DepartmentName ?? "—")</dd>
-
-                    <dt class="col-sm-4">Status</dt>
-                    <dd class="col-sm-8">
-                        <span class="badge @statusBadgeClass">@(Model.AccountStatus?.Description ?? "—")</span>
-                    </dd>
-
-                    <dt class="col-sm-4">Created</dt>
-                    <dd class="col-sm-8">@Model.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</dd>
-                </dl>
+    <div style="flex:1;min-width:0">
+        <div class="card">
+            <div class="card-hd"><div class="card-hd-txt"><div class="card-title">Account</div></div></div>
+            <div class="card-bd">
+                <div class="kv">
+                    <div class="kv-row"><div class="kv-k">Role</div><div class="kv-v">@(Model.Role?.RoleName ?? "-")</div></div>
+                    <div class="kv-row"><div class="kv-k">Department</div><div class="kv-v">@(Model.Department?.DepartmentName ?? "-")</div></div>
+                    <div class="kv-row"><div class="kv-k">Status</div><div class="kv-v"><div class="badge" style="background:@statusBg;color:@statusFg"><div class="dot"></div>@(Model.AccountStatus?.Description ?? "-")</div></div></div>
+                    <div class="kv-row last"><div class="kv-k">Created</div><div class="kv-v">@Model.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</div></div>
+                </div>
             </div>
         </div>
     </div>

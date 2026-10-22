@@ -3,6 +3,8 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using ASI.Basecode.WebApp.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using ASI.Basecode.Resources.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -18,6 +20,7 @@ namespace ASI.Basecode.WebApp.Controllers
     /// User Management screens (Figma: A - User Management / A - User Details).
     /// Thin controller: binds requests, delegates to IUserService, prepares view data.
     /// </summary>
+    [Authorize(Roles = RoleCodes.Admin)]
     public class UsersController : ControllerBase<UsersController>
     {
         private readonly IUserService _userService;

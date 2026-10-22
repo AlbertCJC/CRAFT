@@ -3,6 +3,8 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using ASI.Basecode.WebApp.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using ASI.Basecode.Resources.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -19,6 +21,7 @@ namespace ASI.Basecode.WebApp.Controllers
     /// My Reservations / Reservation Details). Thin controller: binds requests, delegates to
     /// IReservationService, prepares view data.
     /// </summary>
+    [Authorize]
     public class ReservationsController : ControllerBase<ReservationsController>
     {
         private readonly IReservationService _reservationService;
@@ -58,6 +61,22 @@ namespace ASI.Basecode.WebApp.Controllers
                 this.TempData["ErrorMessage"] = "Unable to load the equipment availability list.";
                 return this.View(new EquipmentAvailabilityIndexViewModel { Page = new PagedResult<EquipmentAvailabilityRowViewModel>() });
             }
+        }
+
+        /// <summary>
+        /// Borrower equipment details (Figma: B - Equipment Details, screen 2.2).
+        /// </summary>
+        [HttpGet]
+        public IActionResult EquipmentDetails(long id)
+        {
+            var model = this._reservationService.GetEquipmentDetailsViewModel(id);
+            if (model == null)
+            {
+                this.TempData["ErrorMessage"] = ErrorMessages.ReservationEquipmentNotFound;
+                return this.RedirectToAction(nameof(this.Available));
+            }
+
+            return this.View(model);
         }
 
         /// <summary>
@@ -108,9 +127,19 @@ namespace ASI.Basecode.WebApp.Controllers
         /// <summary>
         /// The acting borrower's own reservations (Figma: B - My Reservations).
         /// </summary>
-        public IActionResult Mine()
+        public IActionResult Mine(string search)
         {
             var model = this._reservationService.GetMineViewModel();
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                model.Reservations = model.Reservations
+                    .Where(r => (r.ReservationNumber ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase)
+                        || (r.EquipmentName ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase)
+                        || (r.AssetCode ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+            this.ViewBag.Search = search;
             return this.View(model);
         }
 

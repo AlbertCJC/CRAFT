@@ -60,9 +60,59 @@ namespace ASI.Basecode.Services.ViewModelClasses
 
         public string OperationalStatusName { get; set; }
 
+        public string ImagePath { get; set; }
+
         public int TotalQuantity { get; set; }
 
         public int AvailableUnits { get; set; }
+    }
+
+    /// <summary>
+    /// Read model for the borrower Equipment Details screen (2.2).
+    /// </summary>
+    public class EquipmentDetailsViewModel
+    {
+        public long EquipmentId { get; set; }
+
+        public string EquipmentName { get; set; }
+
+        public string AssetCode { get; set; }
+
+        public string Description { get; set; }
+
+        public string CategoryName { get; set; }
+
+        public string LocationName { get; set; }
+
+        public string ConditionName { get; set; }
+
+        public string OperationalStatusCode { get; set; }
+
+        public string OperationalStatusName { get; set; }
+
+        public string ImagePath { get; set; }
+
+        public int TotalQuantity { get; set; }
+
+        public int ReservedUnits { get; set; }
+
+        public int AvailableUnits { get; set; }
+
+        public bool IsUnderMaintenance { get; set; }
+
+        public bool CanReserve { get; set; }
+
+        /// <summary>Reason the Reserve button is disabled, if any.</summary>
+        public string UnavailableReason { get; set; }
+
+        // Borrowing rules from the active policy (4.7 System Settings).
+        public int MaxBorrowDays { get; set; }
+
+        public int FacultyMaxBorrowDays { get; set; }
+
+        public int MaxUnitsPerBorrower { get; set; }
+
+        public int ReservationLeadTimeDays { get; set; }
     }
 
     /// <summary>

@@ -1,8 +1,10 @@
 ﻿using ASI.Basecode.Data;
 using ASI.Basecode.Resources.Constants;
 using ASI.Basecode.WebApp.Extensions.Configuration;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -74,11 +76,30 @@ namespace ASI.Basecode.WebApp
             services.AddControllersWithViews();
             services.AddRazorPages().AddRazorRuntimeCompilation();
 
-            // Session
+            // Session (shared by the current-operator/audit helpers)
             services.AddSession(options =>
             {
                 options.Cookie.Name = Const.Issuer;
+                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
             });
+
+            // Cookie authentication — screens 1.1-1.4 plus role based access control.
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.Cookie.Name = "CampusPulse.Auth";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SameSite = SameSiteMode.Lax;
+                    options.LoginPath = "/Account/Login";
+                    options.LogoutPath = "/Account/Logout";
+                    options.AccessDeniedPath = "/Account/AccessDenied";
+                    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+                    options.SlidingExpiration = true;
+                });
+
+            services.AddAuthorization();
 
             // DI Services AutoMapper(Add Profile)
             this.ConfigureAutoMapper();
@@ -122,6 +143,9 @@ namespace ASI.Basecode.WebApp
 
             this._app.UseSession();
             this._app.UseRouting();
+
+            this._app.UseAuthentication();
+            this._app.UseAuthorization();
         }
     }
 }

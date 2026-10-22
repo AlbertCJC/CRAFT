@@ -3,6 +3,8 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using ASI.Basecode.WebApp.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using ASI.Basecode.Resources.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -10,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ASI.Basecode.WebApp.Controllers
@@ -18,19 +21,26 @@ namespace ASI.Basecode.WebApp.Controllers
     /// Equipment Administration screens (Figma: A - Equipment Administration).
     /// Thin controller: binds requests, delegates to IEquipmentService, prepares view data.
     /// </summary>
+    [Authorize(Roles = RoleCodes.Staff)]
     public class EquipmentController : ControllerBase<EquipmentController>
     {
+        private static readonly string[] AllowedImageExtensions = { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+        private const long MaxImageBytes = 5 * 1024 * 1024;
+
         private readonly IEquipmentService _equipmentService;
+        private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _environment;
 
         public EquipmentController(
             IHttpContextAccessor httpContextAccessor,
             ILoggerFactory loggerFactory,
             IConfiguration configuration,
             IMapper mapper,
-            IEquipmentService equipmentService)
+            IEquipmentService equipmentService,
+            Microsoft.AspNetCore.Hosting.IWebHostEnvironment environment)
             : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
             this._equipmentService = equipmentService;
+            this._environment = environment;
         }
 
         /// <summary>
@@ -81,8 +91,21 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(EquipmentFormViewModel form)
+        public IActionResult Create(EquipmentFormViewModel form, IFormFile imageFile)
         {
+            if (imageFile != null && imageFile.Length > 0)
+            {
+                var (path, imageError) = this.SaveEquipmentImage(imageFile);
+                if (imageError != null)
+                {
+                    this.ModelState.AddModelError(nameof(form.ImagePath), imageError);
+                }
+                else
+                {
+                    form.ImagePath = path;
+                }
+            }
+
             if (!this.ModelState.IsValid)
             {
                 this.ViewBag.CategoryOptions = this.ToSelectList(this._equipmentService.GetCategoryOptions(), form.EquipmentCategoryId, "-- Select category --");
@@ -126,9 +149,26 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(long id, EquipmentFormViewModel form)
+        public IActionResult Edit(long id, EquipmentFormViewModel form, IFormFile imageFile, bool removeImage = false)
         {
             form.EquipmentId = id;
+
+            if (removeImage)
+            {
+                form.ImagePath = null;
+            }
+            else if (imageFile != null && imageFile.Length > 0)
+            {
+                var (path, imageError) = this.SaveEquipmentImage(imageFile);
+                if (imageError != null)
+                {
+                    this.ModelState.AddModelError(nameof(form.ImagePath), imageError);
+                }
+                else
+                {
+                    form.ImagePath = path;
+                }
+            }
 
             if (!this.ModelState.IsValid)
             {
@@ -184,6 +224,45 @@ namespace ASI.Basecode.WebApp.Controllers
             }
 
             return this.RedirectToAction(nameof(this.Index));
+        }
+
+        private (string Path, string Error) SaveEquipmentImage(IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return (null, null);
+                }
+
+                if (file.Length > MaxImageBytes)
+                {
+                    return (null, "Image must be 5 MB or smaller.");
+                }
+
+                var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(extension) || !AllowedImageExtensions.Contains(extension))
+                {
+                    return (null, "Upload a JPG, PNG, WEBP or GIF image.");
+                }
+
+                var folder = Path.Combine(this._environment.WebRootPath, "uploads", "equipment");
+                Directory.CreateDirectory(folder);
+
+                var fileName = Guid.NewGuid().ToString("N") + extension;
+                var absolutePath = Path.Combine(folder, fileName);
+                using (var stream = new FileStream(absolutePath, FileMode.Create))
+                {
+                    file.CopyTo(stream);
+                }
+
+                return ("/uploads/equipment/" + fileName, null);
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError(ex, "Failed to save equipment image.");
+                return (null, "Unable to save the uploaded image. Please try again.");
+            }
         }
 
         private SelectList ToSelectList(System.Collections.Generic.IEnumerable<LookupViewModel> options, long? selected, string emptyText)

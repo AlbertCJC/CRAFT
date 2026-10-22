@@ -21,6 +21,11 @@ namespace ASI.Basecode.Services.Interfaces
         ReservationFormContextViewModel GetReservationFormViewModel(long equipmentId);
 
         /// <summary>
+        /// Borrower equipment details (screen 2.2). Null when the equipment does not exist or is inactive.
+        /// </summary>
+        EquipmentDetailsViewModel GetEquipmentDetailsViewModel(long equipmentId);
+
+        /// <summary>
         /// Validates the request against the effective borrowing policy (or built-in defaults),
         /// creates the PENDING reservation, holds units on the inventory balance and writes an audit row.
         /// </summary>

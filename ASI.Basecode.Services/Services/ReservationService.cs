@@ -93,6 +93,50 @@ namespace ASI.Basecode.Services.Services
             };
         }
 
+        public EquipmentDetailsViewModel GetEquipmentDetailsViewModel(long equipmentId)
+        {
+            var entity = this._reservationRepository.GetReservableEquipment(equipmentId);
+            if (entity == null)
+            {
+                return null;
+            }
+
+            var row = this.MapToAvailabilityRow(entity);
+            var policy = this.GetActivePolicy();
+            var balance = entity.EquipmentInventoryBalance;
+            var available = this.ComputeAvailableUnits(balance);
+            var isMaintenance = string.Equals(
+                entity.OperationalStatus?.Code, "UNDER_MAINTENANCE", StringComparison.OrdinalIgnoreCase);
+
+            var reason = isMaintenance
+                ? "Equipment is currently under maintenance."
+                : (available <= 0 ? "Equipment is not available for reservation." : null);
+
+            return new EquipmentDetailsViewModel
+            {
+                EquipmentId = row.EquipmentId,
+                EquipmentName = row.EquipmentName,
+                AssetCode = row.AssetCode,
+                Description = entity.Description,
+                CategoryName = row.CategoryName,
+                LocationName = row.LocationName,
+                ConditionName = row.ConditionName,
+                OperationalStatusCode = entity.OperationalStatus?.Code,
+                OperationalStatusName = entity.OperationalStatus?.Description,
+                ImagePath = entity.ImagePath,
+                TotalQuantity = balance?.TotalQuantity ?? 0,
+                ReservedUnits = balance?.ReservedQuantity ?? 0,
+                AvailableUnits = available,
+                IsUnderMaintenance = isMaintenance,
+                CanReserve = reason == null,
+                UnavailableReason = reason,
+                MaxBorrowDays = policy.MaxBorrowDays,
+                FacultyMaxBorrowDays = policy.FacultyMaxBorrowDays,
+                MaxUnitsPerBorrower = policy.MaxUnitsPerBorrower,
+                ReservationLeadTimeDays = policy.ReservationLeadTimeDays,
+            };
+        }
+
         public (bool Success, string Error, long ReservationId) Create(ReservationFormViewModel form)
         {
             try
@@ -162,7 +206,15 @@ namespace ASI.Basecode.Services.Services
                 var borrower = this.DbContext.Users
                     .AsNoTracking()
                     .Include(u => u.Role)
+                    .Include(u => u.AccountStatus)
                     .First(u => u.UserId == actorUserId.Value);
+
+                // Unverified accounts may sign in but cannot submit a reservation ([1.1] special scenario).
+                if (string.Equals(borrower.AccountStatus?.Code, "UNVERIFIED", StringComparison.OrdinalIgnoreCase))
+                {
+                    return (false, "Your account is still pending verification.", form.EquipmentId);
+                }
+
                 var isFaculty = string.Equals(borrower.Role?.RoleCode, "FACULTY", StringComparison.OrdinalIgnoreCase);
                 var maxBorrowDays = isFaculty ? policy.FacultyMaxBorrowDays : policy.MaxBorrowDays;
                 var durationDays = (expectedReturn - requestedStart).TotalDays;

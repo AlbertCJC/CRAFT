@@ -4,14 +4,18 @@
     ViewData["Title"] = "Edit Equipment";
 }
 
-<h2 class="mb-3">Edit Equipment</h2>
-<p class="text-muted">Fields marked with an asterisk are required. Deleting an equipment record is blocked while active borrowings reference it.</p>
+<div class="page-hd">
+    <div>
+        <div class="crumb"><div>CRAFT</div><div>/</div><div>Equipment</div><div>/</div><div class="cur">Edit</div></div>
+        <div class="title">Edit Equipment</div>
+        <div class="subtitle">Update record details and photo. Deleting a record is blocked while borrowings reference it.</div>
+    </div>
+</div>
 
 <div class="card">
-    <div class="card-body">
-        <form asp-action="Edit" asp-route-id="@Model.EquipmentId" method="post">
+    <div class="card-bd">
+        <form asp-action="Edit" asp-route-id="@Model.EquipmentId" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="EquipmentId" />
             <partial name="_EquipmentForm" model="Model" />
         </form>
     </div>

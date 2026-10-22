@@ -4,14 +4,18 @@
     ViewData["Title"] = "Edit User";
 }
 
-<h2 class="mb-3">Edit User</h2>
-<p class="text-muted">Fields marked with an asterisk are required. Deleting a user account is blocked while borrowings, reservations or inventory movements reference it.</p>
+<div class="page-hd">
+    <div>
+        <div class="crumb"><div>CRAFT</div><div>/</div><div>Users</div><div>/</div><div class="cur">Edit</div></div>
+        <div class="title">Edit User</div>
+        <div class="subtitle">Update account details. Deleting is blocked while borrowings, reservations or inventory movements reference the user.</div>
+    </div>
+</div>
 
 <div class="card">
-    <div class="card-body">
+    <div class="card-bd">
         <form asp-action="Edit" asp-route-id="@Model.UserId" method="post">
             @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="UserId" />
             <partial name="_UserForm" model="Model" />
         </form>
     </div>

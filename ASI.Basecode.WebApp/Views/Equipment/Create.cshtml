@@ -4,12 +4,17 @@
     ViewData["Title"] = "Add Equipment";
 }
 
-<h2 class="mb-3">Add Equipment</h2>
-<p class="text-muted">Fields marked with an asterisk are required.</p>
+<div class="page-hd">
+    <div>
+        <div class="crumb"><div>CRAFT</div><div>/</div><div>Equipment</div><div>/</div><div class="cur">Add</div></div>
+        <div class="title">Add Equipment</div>
+        <div class="subtitle">Fields marked with an asterisk are required.</div>
+    </div>
+</div>
 
 <div class="card">
-    <div class="card-body">
-        <form asp-action="Create" method="post">
+    <div class="card-bd">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <partial name="_EquipmentForm" model="Model" />
         </form>

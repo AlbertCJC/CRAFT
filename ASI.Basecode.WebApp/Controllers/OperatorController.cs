@@ -1,6 +1,8 @@
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.WebApp.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using ASI.Basecode.Resources.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -16,6 +18,7 @@ namespace ASI.Basecode.WebApp.Controllers
     /// while web auth is stripped. Sets the CurrentUserId/CurrentUserName session keys read
     /// by CurrentUserService.
     /// </summary>
+    [Authorize(Roles = RoleCodes.Admin)]
     public class OperatorController : ControllerBase<OperatorController>
     {
         private const string CurrentUserIdKey = "CurrentUserId";

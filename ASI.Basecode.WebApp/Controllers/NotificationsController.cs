@@ -2,6 +2,8 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using ASI.Basecode.WebApp.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using ASI.Basecode.Resources.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -11,40 +13,76 @@ using System.Linq;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
+    [Authorize]
     public class NotificationsController : ControllerBase<NotificationsController>
     {
         private readonly ISettingsService _service;
+        private readonly ICurrentUserService _currentUser;
 
         public NotificationsController(
             IHttpContextAccessor httpContextAccessor,
             ILoggerFactory loggerFactory,
             IConfiguration configuration,
             IMapper mapper,
-            ISettingsService service)
+            ISettingsService service,
+            ICurrentUserService currentUser)
             : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
             this._service = service;
+            this._currentUser = currentUser;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(string search, string status, string type)
         {
-            var userId = this._httpContextAccessor.HttpContext?.Session?.GetString("CurrentUserId");
-            long.TryParse(userId, out var id);
-            if (id == 0)
+            var id = this._currentUser.GetActorUserId();
+            if (!id.HasValue)
             {
-                this.TempData["ErrorMessage"] = "Select an operator first.";
-                return this.RedirectToAction("Index", "Operator");
+                this.TempData["ErrorMessage"] = "Please sign in to view notifications.";
+                return this.RedirectToAction("Login", "Account");
             }
-            return this.View(this._service.GetNotifications(id));
+
+            var model = this._service.GetNotifications(id.Value);
+            var items = model.Notifications.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                items = items.Where(n =>
+                    (n.Title ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    (n.Message ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (string.Equals(status, "unread", StringComparison.OrdinalIgnoreCase))
+            {
+                items = items.Where(n => !n.IsRead);
+            }
+            else if (string.Equals(status, "read", StringComparison.OrdinalIgnoreCase))
+            {
+                items = items.Where(n => n.IsRead);
+            }
+
+            if (!string.IsNullOrWhiteSpace(type) && !string.Equals(type, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                items = items.Where(n => string.Equals(n.NotificationType, type, StringComparison.OrdinalIgnoreCase));
+            }
+
+            model.Notifications = items.ToList();
+            this.ViewBag.Search = search;
+            this.ViewBag.Status = string.IsNullOrWhiteSpace(status) ? "all" : status;
+            this.ViewBag.Type = string.IsNullOrWhiteSpace(type) ? "all" : type;
+
+            return this.View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult MarkRead(long id)
         {
-            var userId = this._httpContextAccessor.HttpContext?.Session?.GetString("CurrentUserId");
-            long.TryParse(userId, out var uid);
-            this._service.MarkNotificationRead(id, uid);
+            var uid = this._currentUser.GetActorUserId();
+            if (uid.HasValue)
+            {
+                this._service.MarkNotificationRead(id, uid.Value);
+            }
             return this.RedirectToAction(nameof(this.Index));
         }
 
@@ -52,9 +90,11 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult MarkAllRead()
         {
-            var userId = this._httpContextAccessor.HttpContext?.Session?.GetString("CurrentUserId");
-            long.TryParse(userId, out var uid);
-            this._service.MarkAllNotificationsRead(uid);
+            var uid = this._currentUser.GetActorUserId();
+            if (uid.HasValue)
+            {
+                this._service.MarkAllNotificationsRead(uid.Value);
+            }
             this.TempData["SuccessMessage"] = "All notifications marked as read.";
             return this.RedirectToAction(nameof(this.Index));
         }

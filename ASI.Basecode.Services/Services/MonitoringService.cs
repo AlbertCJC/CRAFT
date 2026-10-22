@@ -42,11 +42,26 @@ namespace ASI.Basecode.Services.Services
             var (borTotal, borActive, borPartial, borReturned, borOverdue, borLost) = this._repository.GetBorrowingCounts();
             var (eqTotal, eqUnits, eqAvailable) = this._repository.GetEquipmentCounts();
 
+            var totalUsers = this.DbContext.Users.Count();
+            var reservedUnits = this.DbContext.EquipmentInventoryBalances.Sum(b => (int?)b.ReservedQuantity) ?? 0;
+            var borrowedUnits = this.DbContext.EquipmentInventoryBalances.Sum(b => (int?)b.ReleasedQuantity) ?? 0;
+            var readyForRelease = this.DbContext.Reservations
+                .Count(r => r.Status.Code == "READY_FOR_RELEASE");
+            var damagedLost = this.DbContext.Equipment
+                .Count(e => e.CurrentCondition.Code == "DAMAGED"
+                    || e.CurrentCondition.Code == "MISSING_PARTS"
+                    || e.CurrentCondition.Code == "LOST");
+
             return new DashboardViewModel
             {
+                TotalUsers = totalUsers,
                 EquipmentRecords = eqTotal,
                 TotalUnits = eqUnits,
                 AvailableUnits = eqAvailable,
+                ReservedUnits = reservedUnits,
+                BorrowedUnits = borrowedUnits,
+                DamagedLostUnits = damagedLost,
+                ReservationReadyForRelease = readyForRelease,
                 ReservationTotal = resTotal,
                 ReservationPending = resPending,
                 ReservationApproved = resApproved,

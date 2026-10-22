@@ -1,60 +1,72 @@
+@model RegisterViewModel
 @{
     Layout = "_AuthLayout";
     ViewData["Title"] = "Create Account";
 }
 <div class="cp-auth-card cp-auth-card-wide">
     <h1 class="cp-auth-title">Create Account</h1>
-    <p class="cp-auth-subtitle">Register for CampusPulse access</p>
+    <p class="cp-auth-subtitle">Register for CRAFT access</p>
 
     <form method="post" action="/Account/Register">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="cp-alert cp-alert-error"></div>
+
         <div class="row">
             <div class="col-md-6">
                 <div class="cp-form-group">
-                    <label class="cp-form-label">First Name <span class="required">*</span></label>
-                    <input type="text" name="firstName" class="cp-input" placeholder="First name" required />
+                    <label class="cp-form-label" asp-for="FirstName">First Name <span class="required">*</span></label>
+                    <input asp-for="FirstName" class="cp-input" placeholder="First name" required />
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="cp-form-group">
-                    <label class="cp-form-label">Last Name <span class="required">*</span></label>
-                    <input type="text" name="lastName" class="cp-input" placeholder="Last name" required />
+                    <label class="cp-form-label" asp-for="LastName">Last Name <span class="required">*</span></label>
+                    <input asp-for="LastName" class="cp-input" placeholder="Last name" required />
                 </div>
             </div>
         </div>
         <div class="cp-form-group">
-            <label class="cp-form-label">Account / School ID <span class="required">*</span></label>
-            <input type="text" name="accountIdentifier" class="cp-input" placeholder="e.g. 2023-104857" required />
+            <label class="cp-form-label" asp-for="AccountIdentifier">School ID / Employee ID <span class="required">*</span></label>
+            <input asp-for="AccountIdentifier" class="cp-input" placeholder="e.g. 2023-104857" required />
         </div>
         <div class="cp-form-group">
-            <label class="cp-form-label">School Email <span class="required">*</span></label>
-            <input type="email" name="schoolEmail" class="cp-input" placeholder="your.name@university.edu.ph" required />
+            <label class="cp-form-label" asp-for="SchoolEmail">School Email <span class="required">*</span></label>
+            <input asp-for="SchoolEmail" type="email" class="cp-input" placeholder="your.name@university.edu.ph" required />
         </div>
         <div class="cp-form-group">
-            <label class="cp-form-label">Department</label>
-            <select name="departmentId" class="cp-select">
+            <label class="cp-form-label" asp-for="RoleId">Role <span class="required">*</span></label>
+            <select asp-for="RoleId" class="cp-select" required>
+                <option value="">— Select role —</option>
+                @foreach (var role in Model.RoleOptions)
+                {
+                    <option value="@role.Id">@role.Text</option>
+                }
+            </select>
+        </div>
+        <div class="cp-form-group">
+            <label class="cp-form-label" asp-for="DepartmentId">Department / Program <span class="required">*</span></label>
+            <select asp-for="DepartmentId" class="cp-select" required>
                 <option value="">— Select department —</option>
-                <option value="1">College of Computer Studies</option>
-                <option value="2">College of Engineering</option>
-                <option value="3">Property Office</option>
-                <option value="4">MIS Department Systems</option>
-                <option value="5">College of Education</option>
-                <option value="6">College of Accountancy</option>
+                @foreach (var department in Model.DepartmentOptions)
+                {
+                    <option value="@department.Id">@department.Text</option>
+                }
             </select>
         </div>
         <div class="cp-form-group">
-            <label class="cp-form-label">Role</label>
-            <select name="roleId" class="cp-select">
-                <option value="1">Student</option>
-                <option value="2">Faculty Member</option>
-            </select>
+            <label class="cp-form-label" asp-for="Password">Password <span class="required">*</span></label>
+            <input asp-for="Password" type="password" class="cp-input" placeholder="Create a password" autocomplete="new-password" required />
+            <div class="cp-form-hint">At least 8 characters, with 1 uppercase letter and 1 number.</div>
         </div>
         <div class="cp-form-group">
-            <label class="cp-form-label">Password <span class="required">*</span></label>
-            <input type="password" name="password" class="cp-input" placeholder="Create a password" required />
+            <label class="cp-form-label" asp-for="ConfirmPassword">Confirm Password <span class="required">*</span></label>
+            <input asp-for="ConfirmPassword" type="password" class="cp-input" placeholder="Re-enter password" autocomplete="new-password" required />
         </div>
         <div class="cp-form-group">
-            <label class="cp-form-label">Confirm Password <span class="required">*</span></label>
-            <input type="password" name="confirmPassword" class="cp-input" placeholder="Re-enter password" required />
+            <label class="cp-form-hint" style="display:flex;gap:8px;align-items:flex-start;">
+                <input asp-for="PrivacyConsent" />
+                <span>I accept the Data Privacy notice and consent to the processing of my information for equipment borrowing.</span>
+            </label>
         </div>
         <button type="submit" class="cp-btn cp-btn-primary" style="width:100%;justify-content:center;">Create Account</button>
     </form>

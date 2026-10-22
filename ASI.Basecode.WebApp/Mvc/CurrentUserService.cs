@@ -1,13 +1,14 @@
 using ASI.Basecode.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System;
+using System.Security.Claims;
 
 namespace ASI.Basecode.WebApp.Mvc
 {
     /// <summary>
-    /// Stand-in operator identity until web login/auth is reintroduced.
-    /// Reads the current user id from session; a future "select operator" admin action
-    /// will set it. When nothing is set, audit entries are written with a null actor.
+    /// Resolves the acting user for audit logging.
+    /// Primary source is the authenticated cookie principal; the session keys remain as a
+    /// fallback for the legacy operator switcher.
     /// </summary>
     public class CurrentUserService : ICurrentUserService
     {
@@ -23,13 +24,29 @@ namespace ASI.Basecode.WebApp.Mvc
 
         public long? GetActorUserId()
         {
-            var raw = this._httpContextAccessor.HttpContext?.Session?.GetString(ActorUserIdSessionKey);
-            return long.TryParse(raw, out var id) ? id : null;
+            var httpContext = this._httpContextAccessor.HttpContext;
+
+            var raw = httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (long.TryParse(raw, out var id))
+            {
+                return id;
+            }
+
+            var sessionRaw = httpContext?.Session?.GetString(ActorUserIdSessionKey);
+            return long.TryParse(sessionRaw, out var sessionId) ? sessionId : null;
         }
 
         public string GetActorName()
         {
-            return this._httpContextAccessor.HttpContext?.Session?.GetString(ActorNameSessionKey);
+            var httpContext = this._httpContextAccessor.HttpContext;
+
+            var name = httpContext?.User?.Identity?.IsAuthenticated == true
+                ? httpContext.User.Identity.Name
+                : null;
+
+            return string.IsNullOrWhiteSpace(name)
+                ? httpContext?.Session?.GetString(ActorNameSessionKey)
+                : name;
         }
     }
 }

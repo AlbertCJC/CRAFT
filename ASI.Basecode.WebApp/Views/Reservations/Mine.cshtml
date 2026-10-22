@@ -1,74 +1,87 @@
-@using ASI.Basecode.Services.ViewModelClasses
 @model ReservationMineViewModel
 @{
     ViewData["Title"] = "My Reservations";
+    var search = ViewBag.Search as string;
+    Func<string, string> badgeBg = code => code switch
+    {
+        "PENDING" => "#FDF3E1", "APPROVED" => "#E6F1F5", "READY_FOR_RELEASE" => "#E2F2EE",
+        "COMPLETED" => "#EAF5EF", "REJECTED" => "#FBEAEA", "CANCELLED" => "#EEF2F0", _ => "#EEF2F0",
+    };
+    Func<string, string> badgeFg = code => code switch
+    {
+        "PENDING" => "#8A5D0F", "APPROVED" => "#245C6E", "READY_FOR_RELEASE" => "#0C6155",
+        "COMPLETED" => "#0B5D3E", "REJECTED" => "#8E2F2F", "CANCELLED" => "#3E514A", _ => "#3E514A",
+    };
 }
 
-<div class="cp-page-header">
+<div class="page-hd">
     <div>
-        <h1 class="cp-page-title">My Reservations</h1>
-        <p class="cp-page-subtitle">Track your equipment reservation requests.</p>
+        <div class="crumb"><div>CRAFT</div><div>/</div><div class="cur">My Reservations</div></div>
+        <div class="title">My Reservations</div>
+        <div class="subtitle">Every reservation request you have submitted, across all statuses.</div>
     </div>
-    <div class="cp-page-actions">
-        <a asp-action="Available" class="cp-btn cp-btn-primary"><i class="fa-solid fa-plus"></i> New Reservation</a>
+    <div class="hd-actions">
+        <a class="btn btn-primary" href="/Reservations/Available">
+            <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            <div>Browse Equipment</div>
+        </a>
     </div>
 </div>
 
-@if (!Model.Reservations.Any())
-{
-    <div class="cp-empty-state">
-        <div class="cp-empty-state-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
-        <div class="cp-empty-state-text">You have no reservations yet.</div>
-        <a asp-action="Available" class="cp-btn cp-btn-primary" style="margin-top:12px;">Browse Equipment</a>
+<div class="card">
+    <form method="get" action="/Reservations/Mine" class="toolbar">
+        <div class="search">
+            <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            <input type="text" name="search" value="@search" placeholder="Search by reservation ID or equipment name..." style="border:0;outline:0;background:transparent;flex:1;font:inherit;color:inherit" />
+        </div>
+        <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+        <a href="/Reservations/Mine" class="btn btn-secondary btn-sm">Clear</a>
+    </form>
+    <div class="tbl">
+        <div class="tr th">
+            <div class="td" style="flex:155 1 0;min-width:0">RESERVATION ID</div>
+            <div class="td" style="flex:275 1 0;min-width:0">EQUIPMENT</div>
+            <div class="td" style="flex:55 1 0;min-width:0">QTY</div>
+            <div class="td" style="flex:215 1 0;min-width:0">REQUESTED SCHEDULE</div>
+            <div class="td" style="flex:165 1 0;min-width:0">STATUS</div>
+            <div class="td end" style="flex:205 1 0;min-width:0">ACTIONS</div>
+        </div>
+        @if (!Model.Reservations.Any())
+        {
+            <div class="tr"><div class="td" style="flex:1;min-width:0;padding:28px 17px;color:#8A968F">You have no reservation requests yet.</div></div>
+        }
+        @foreach (var r in Model.Reservations)
+        {
+            <div class="tr">
+                <div class="td" style="flex:155 1 0;min-width:0"><div class="mono">@r.ReservationNumber</div></div>
+                <div class="td" style="flex:275 1 0;min-width:0">
+                    <div class="cellwrap">
+                        <div class="thumb" style="width:36px;height:36px">
+                            <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+                        </div>
+                        <div class="cellname"><div class="strong">@r.EquipmentName</div><div class="sub">@r.AssetCode</div></div>
+                    </div>
+                </div>
+                <div class="td" style="flex:55 1 0;min-width:0">@r.RequestedQuantity</div>
+                <div class="td" style="flex:215 1 0;min-width:0">@r.RequestedStartAtUtc.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")<div class="sub">Return @r.ExpectedReturnAtUtc.ToLocalTime().ToString("dd MMM, hh:mm tt")</div></div>
+                <div class="td" style="flex:165 1 0;min-width:0"><div class="badge mid" style="background:@badgeBg(r.StatusCode);color:@badgeFg(r.StatusCode)"><div class="dot"></div>@r.StatusDescription</div></div>
+                <div class="td end" style="flex:205 1 0;min-width:0">
+                    <div class="acts">
+                        <a class="btn btn-secondary btn-sm" href="/Reservations/Details/@r.ReservationId"><div>View</div></a>
+                        @if (r.CanCancel)
+                        {
+                            <form method="post" action="/Reservations/Cancel/@r.ReservationId" style="margin:0" onsubmit="return confirm('Cancel this reservation request?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="btn btn-off btn-sm">Cancel</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
     </div>
-}
-else
-{
-    <div class="cp-table-wrap">
-        <table class="cp-table">
-            <thead>
-                <tr>
-                    <th>Reservation #</th>
-                    <th>Equipment</th>
-                    <th class="text-center">Qty</th>
-                    <th>Pickup Point</th>
-                    <th>Status</th>
-                    <th>Start</th>
-                    <th>Expected Return</th>
-                    <th class="text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var r in Model.Reservations)
-                {
-                    <tr>
-                        <td><strong>@r.ReservationNumber</strong></td>
-                        <td>
-                            @r.EquipmentName
-                            <div style="font-size:10.8px;color:var(--color-text-lighter);">@r.AssetCode</div>
-                        </td>
-                        <td class="text-center">@r.RequestedQuantity</td>
-                        <td>@(r.PickupLocationName ?? "—")</td>
-                        <td>
-                            <span class="cp-badge @(r.StatusCode == "PENDING" ? "cp-badge-warning" : r.StatusCode == "APPROVED" ? "cp-badge-info" : r.StatusCode == "COMPLETED" ? "cp-badge-success" : r.StatusCode == "CANCELLED" ? "cp-badge-neutral" : "cp-badge-error")">
-                                @r.StatusDescription
-                            </span>
-                        </td>
-                        <td style="font-size:11.6px;">@r.RequestedStartAtUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                        <td style="font-size:11.6px;">@r.ExpectedReturnAtUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                        <td class="text-center">
-                            <a asp-action="Details" asp-route-id="@r.ReservationId" class="cp-btn cp-btn-secondary cp-btn-sm">View</a>
-                            @if (r.CanCancel)
-                            {
-                                <form asp-action="Cancel" asp-route-id="@r.ReservationId" method="post" style="display:inline;">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="cp-btn cp-btn-danger cp-btn-sm" onclick="return confirm('Cancel this reservation?');">Cancel</button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
+</div>

@@ -2,6 +2,8 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using ASI.Basecode.WebApp.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using ASI.Basecode.Resources.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -13,6 +15,7 @@ using System.Linq;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
+    [Authorize(Roles = RoleCodes.Staff)]
     public class ReturnsController : ControllerBase<ReturnsController>
     {
         private readonly IReturnProcessingService _service;

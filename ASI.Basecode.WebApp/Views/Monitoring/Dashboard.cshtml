@@ -1,81 +1,139 @@
-@using ASI.Basecode.Services.ViewModelClasses
 @model DashboardViewModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Administrator Dashboard";
 }
 
-<h1 class="cp-page-title" style="margin-bottom:4px;">CampusPulse Dashboard</h1>
-<p class="cp-page-subtitle" style="margin-bottom:24px;">System overview and recent activity.</p>
+<div class="cp-page-header">
+    <div>
+        <h1 class="cp-page-title">Administrator Dashboard</h1>
+        <p class="cp-page-subtitle">System-wide totals for users, equipment and transactions.</p>
+    </div>
+    <div class="cp-page-actions">
+        <a href="/Monitoring/Transactions" class="cp-btn cp-btn-secondary">Transactions</a>
+        <a href="/Monitoring/AuditLogs" class="cp-btn cp-btn-primary">Audit Logs</a>
+    </div>
+</div>
 
-<!-- Equipment KPIs -->
+<div class="cp-hero">
+    <div style="min-width:0;">
+        <div class="cp-hero-title">CRAFT overview</div>
+        <div class="cp-hero-sub">
+            @Model.TotalUsers registered account@(Model.TotalUsers == 1 ? "" : "s"), @Model.EquipmentRecords equipment record@(Model.EquipmentRecords == 1 ? "" : "s") and @Model.ReservationTotal reservation@(Model.ReservationTotal == 1 ? "" : "s") on record.
+        </div>
+        <div class="cp-hero-chips">
+            <div class="cp-chip"><div class="dot"></div>@Model.AvailableUnits units available</div>
+            <div class="cp-chip warn"><div class="dot"></div>@Model.ReservationPending pending</div>
+            @if (Model.BorrowingOverdue > 0)
+            {
+                <div class="cp-chip error"><div class="dot"></div>@Model.BorrowingOverdue overdue</div>
+            }
+        </div>
+    </div>
+    <div class="cp-hero-actions">
+        <a href="/Users" class="cp-btn cp-btn-light">Manage Users</a>
+        <a href="/Equipment" class="cp-btn cp-btn-light">Equipment</a>
+    </div>
+</div>
+
+<div class="cp-section-title">At a glance</div>
 <div class="cp-kpi-grid">
-    <div class="cp-kpi">
+    <a class="cp-kpi" href="/Users">
+        <div class="cp-kpi-label">Total Users</div>
+        <div class="cp-kpi-value">@Model.TotalUsers</div>
+    </a>
+    <a class="cp-kpi" href="/Equipment">
         <div class="cp-kpi-label">Equipment Records</div>
         <div class="cp-kpi-value">@Model.EquipmentRecords</div>
-    </div>
-    <div class="cp-kpi">
-        <div class="cp-kpi-label">Total Units</div>
-        <div class="cp-kpi-value">@Model.TotalUnits</div>
-    </div>
-    <div class="cp-kpi">
+    </a>
+    <a class="cp-kpi" href="/Equipment">
         <div class="cp-kpi-label">Available Units</div>
         <div class="cp-kpi-value">@Model.AvailableUnits</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Reserved Units</div>
+        <div class="cp-kpi-value muted">@Model.ReservedUnits</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Borrowed Units</div>
+        <div class="cp-kpi-value muted">@Model.BorrowedUnits</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Overdue Transactions</div>
+        <div class="cp-kpi-value @(Model.BorrowingOverdue > 0 ? "error" : "muted")">@Model.BorrowingOverdue</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/AuditLogs">
+        <div class="cp-kpi-label">Damaged / Lost</div>
+        <div class="cp-kpi-value @(Model.DamagedLostUnits > 0 ? "warn" : "muted")">@Model.DamagedLostUnits</div>
+    </a>
+</div>
+
+<div class="cp-section-title">Reservation statistics</div>
+<div class="cp-kpi-grid">
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Total</div>
+        <div class="cp-kpi-value">@Model.ReservationTotal</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Pending</div>
+        <div class="cp-kpi-value warn">@Model.ReservationPending</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Approved</div>
+        <div class="cp-kpi-value">@Model.ReservationApproved</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Ready for Release</div>
+        <div class="cp-kpi-value">@Model.ReservationReadyForRelease</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Completed</div>
+        <div class="cp-kpi-value muted">@Model.ReservationCompleted</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Rejected</div>
+        <div class="cp-kpi-value error">@Model.ReservationRejected</div>
+    </a>
+    <a class="cp-kpi" href="/Monitoring/Transactions">
+        <div class="cp-kpi-label">Cancelled</div>
+        <div class="cp-kpi-value muted">@Model.ReservationCancelled</div>
+    </a>
+</div>
+
+<div class="cp-section-title">Recent system activity</div>
+<div class="cp-card">
+    <div class="cp-card-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Latest recorded actions</span>
+        <a href="/Monitoring/AuditLogs" class="cp-btn cp-btn-secondary cp-btn-sm">View all</a>
     </div>
-</div>
-
-<!-- Reservations KPIs -->
-<h3 style="font-size:14px;font-weight:700;color:var(--color-text-soft);margin:0 0 8px;">Reservations</h3>
-<div class="cp-kpi-grid" style="grid-template-columns:repeat(7,1fr);">
-    <div class="cp-kpi"><div class="cp-kpi-label">Total</div><div class="cp-kpi-value">@Model.ReservationTotal</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Pending</div><div class="cp-kpi-value" style="color:var(--color-warning);">@Model.ReservationPending</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Approved</div><div class="cp-kpi-value" style="color:var(--color-info);">@Model.ReservationApproved</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Completed</div><div class="cp-kpi-value" style="color:var(--color-success);">@Model.ReservationCompleted</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Rejected</div><div class="cp-kpi-value" style="color:var(--color-error);">@Model.ReservationRejected</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Cancelled</div><div class="cp-kpi-value">@Model.ReservationCancelled</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Expired</div><div class="cp-kpi-value">@Model.ReservationExpired</div></div>
-</div>
-
-<!-- Borrowings KPIs -->
-<h3 style="font-size:14px;font-weight:700;color:var(--color-text-soft);margin:16px 0 8px;">Borrowings</h3>
-<div class="cp-kpi-grid" style="grid-template-columns:repeat(6,1fr);">
-    <div class="cp-kpi"><div class="cp-kpi-label">Total</div><div class="cp-kpi-value">@Model.BorrowingTotal</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Active</div><div class="cp-kpi-value" style="color:var(--color-info);">@Model.BorrowingActive</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Partial</div><div class="cp-kpi-value" style="color:var(--color-warning);">@Model.BorrowingPartial</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Returned</div><div class="cp-kpi-value" style="color:var(--color-success);">@Model.BorrowingReturned</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Overdue</div><div class="cp-kpi-value" style="color:var(--color-error);">@Model.BorrowingOverdue</div></div>
-    <div class="cp-kpi"><div class="cp-kpi-label">Lost</div><div class="cp-kpi-value">@Model.BorrowingLost</div></div>
-</div>
-
-<!-- Recent activity -->
-<h3 style="font-size:14px;font-weight:700;color:var(--color-text-soft);margin:24px 0 8px;">Recent Activity</h3>
-<div class="cp-table-wrap">
-    <table class="cp-table">
-        <thead>
-            <tr>
-                <th>When</th>
-                <th>Actor</th>
-                <th>Action</th>
-                <th>Entity</th>
-                <th>Reference</th>
-                <th>Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (!Model.RecentAudit.Any())
-            {
-                <tr><td colspan="6" class="cp-empty-state" style="padding:24px;">No activity yet.</td></tr>
-            }
-            @foreach (var a in Model.RecentAudit)
-            {
+    <div class="cp-table-wrap" style="border:none;">
+        <table class="cp-table">
+            <thead>
                 <tr>
-                    <td style="font-size:11.6px;white-space:nowrap;">@a.OccurredAtUtc.ToLocalTime().ToString("dd MMM HH:mm")</td>
-                    <td style="font-size:11.6px;">@a.ActorName</td>
-                    <td style="font-size:11.6px;">@a.ActionType</td>
-                    <td style="font-size:11.6px;">@a.EntityType</td>
-                    <td style="font-size:11.6px;">@(a.ReferenceNumber ?? "—")</td>
-                    <td style="font-size:11.6px;">@(a.Details ?? "—")</td>
+                    <th>When</th>
+                    <th>Actor</th>
+                    <th>Action</th>
+                    <th>Entity</th>
+                    <th>Reference</th>
+                    <th>Details</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @if (!Model.RecentAudit.Any())
+                {
+                    <tr><td colspan="6" class="cp-empty-state" style="padding:24px;">No activity yet.</td></tr>
+                }
+                @foreach (var a in Model.RecentAudit)
+                {
+                    <tr>
+                        <td style="font-size:11.6px;white-space:nowrap;">@a.OccurredAtUtc.ToLocalTime().ToString("dd MMM HH:mm")</td>
+                        <td style="font-size:11.6px;">@a.ActorName</td>
+                        <td style="font-size:11.6px;">@a.ActionType</td>
+                        <td style="font-size:11.6px;">@a.EntityType</td>
+                        <td style="font-size:11.6px;">@(a.ReferenceNumber ?? "-")</td>
+                        <td style="font-size:11.6px;">@(a.Details ?? "-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>

@@ -2,6 +2,8 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using ASI.Basecode.WebApp.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using ASI.Basecode.Resources.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -11,6 +13,7 @@ using System.Linq;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
+    [Authorize(Roles = RoleCodes.Admin)]
     public class SettingsController : ControllerBase<SettingsController>
     {
         private readonly ISettingsService _service;

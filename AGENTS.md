@@ -4,8 +4,9 @@ ASP.NET Core MVC educational scaffold (ASI Bridge/JumpStart). Targets `net9.0`, 
 
 ## Build
 
-- Requires the .NET 9 SDK. On this machine the standalone `dotnet` CLI is .NET 8 and fails with `NETSDK1045`; build via Visual Studio 2022 (open `ASI.Basecode.sln`) unless a .NET 9 SDK is installed.
-- Set `ASI.Basecode.WebApp` as the startup project. It runs on SQL Server via the `DefaultConnection` connection string in `ASI.Basecode.WebApp/appsettings.json`.
+- Targets `net9.0`; a newer SDK (verified with .NET 10) builds it. `dotnet build ASI.Basecode.sln` succeeds on this machine. Visual Studio 2022 works too.
+- Set `ASI.Basecode.WebApp` as the startup project. It uses `AllianceConnection` in `ASI.Basecode.WebApp/appsettings.json`, currently `(localdb)\MSSQLLocalDB` / `AllianceDB` (the only SQL Server instance installed here). Change it to your SSMS server/database if different.
+- The scaffolded schema arrives **empty**. `DatabaseSeeder` (registered in `Startup.DI.cs`, invoked from `Program.cs`) seeds codebooks + demo data, and creates `password_reset_tokens`, the profile contact columns and `user_preferences`, on every startup, idempotently.
 
 ## Architecture
 
@@ -21,7 +22,12 @@ Four projects, dependency flow: `WebApp → Services → Data → Resources` (Se
 - `Program.cs` does not configure the app directly: `Startup.cs` is a `partial StartupConfigurer` split across `Startup.DI.cs`, `Startup.AutoMapper.cs`, and `Startup.Logger.cs`. Register new services/repositories in `Startup.DI.cs` (`ConfigureOtherServices`); add AutoMapper mappings in the profile inside `Startup.AutoMapper.cs`.
 - New controllers derive from `ASI.Basecode.WebApp.Mvc.ControllerBase<T>` (constructor needs `IHttpContextAccessor`, `ILoggerFactory`, `IConfiguration`, `IMapper`) — see `HomeController` for the pattern.
 - `AsiBasecodeDBContext` is `partial`; keep entity config in `OnModelCreating` and don't fight the `OnModelCreatingPartial` hook.
-- Web login/auth was intentionally stripped in Oct 2026; `appsettings.json` has no `TokenAuthentication` section and WebApp references no auth packages. Don't re-add JWT/bootstrap auth wiring unless asked.
+- Cookie authentication is wired in `Startup.cs` (scheme `CampusPulse.Auth`), with role authorization via `[Authorize(Roles = RoleCodes.*)]` from `ASI.Basecode.Resources/Constants/RoleCodes.cs`. Role codes are `STUDENT`, `FACULTY`, `TECHNICIAN` (custodian) and `ADMIN`.
+- `AccountController` implements 1.1-1.4 (register/login/forgot/reset). Passwords are PBKDF2 via `Services/Manager/PasswordManager.cs`; reset tokens live in `password_reset_tokens` (mapped in `AllianceDbContext.Auth.cs`). No mail transport is configured, so the forgot-password screen surfaces the reset link directly.
+- `CurrentUserService` reads the cookie principal (falls back to legacy session keys). Dashboard routing lives in `HomeController.Index`; nav is role-aware in `Views/Shared/_Layout.cshtml`.
+- Role dashboards: `BorrowerController.Dashboard` (`/Borrower/Dashboard`, screen 2.0), `CustodianController.Dashboard` (`/Custodian/Dashboard`, screen 3.0), `MonitoringController.Dashboard` (`/Monitoring/Dashboard`, screen 4.0). Data comes from `IDashboardService` / `IMonitoringService`.
+- `ProfileController` (`/Profile`) serves screens 2.10 / 3.10 / 4.8 through one shared partial with role-specific views. Contact details and notification preferences persist in `users.contact_number` / `users.alternate_contact` and `user_preferences` (created by the seeder); password changes go through `IAuthService.ChangePassword`.
+- Demo accounts (password `Campus123`): `ADMIN-0001` (admin), `EMP-1001` (custodian), `2023-104857` (student), `EMP-2001` (faculty), `2024-118002` (unverified student).
 
 ## Notes
 

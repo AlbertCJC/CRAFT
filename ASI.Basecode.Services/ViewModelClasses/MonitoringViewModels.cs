@@ -7,10 +7,15 @@ namespace ASI.Basecode.Services.ViewModelClasses
 {
     public class DashboardViewModel
     {
+        public int TotalUsers { get; set; }
         public int EquipmentRecords { get; set; }
         public int TotalUnits { get; set; }
         public int AvailableUnits { get; set; }
+        public int ReservedUnits { get; set; }
+        public int BorrowedUnits { get; set; }
+        public int DamagedLostUnits { get; set; }
         public int ReservationTotal { get; set; }
+        public int ReservationReadyForRelease { get; set; }
         public int ReservationPending { get; set; }
         public int ReservationApproved { get; set; }
         public int ReservationRejected { get; set; }

@@ -4,76 +4,66 @@
     ViewData["Title"] = "Equipment Details";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">@Model.EquipmentName <span class="text-muted small">(@Model.AssetCode)</span></h2>
+<div class="page-hd">
     <div>
-        <a asp-action="Edit" asp-route-id="@Model.EquipmentId" class="btn btn-sm btn-success">Edit</a>
-        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Back to List</a>
+        <div class="crumb"><div>CRAFT</div><div>/</div><div>Equipment</div><div>/</div><div class="cur">@Model.EquipmentName</div></div>
+        <div class="title">@Model.EquipmentName</div>
+        <div class="subtitle">@Model.AssetCode &middot; @(Model.EquipmentCategory?.CategoryName ?? "-")</div>
+    </div>
+    <div class="hd-actions">
+        <a asp-action="Edit" asp-route-id="@Model.EquipmentId" class="btn btn-primary">Edit</a>
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">Equipment Information</div>
-            <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-4">Asset Code</dt>
-                    <dd class="col-sm-8">@Model.AssetCode</dd>
-
-                    <dt class="col-sm-4">Category</dt>
-                    <dd class="col-sm-8">@Model.EquipmentCategory?.CategoryName</dd>
-
-                    <dt class="col-sm-4">Location</dt>
-                    <dd class="col-sm-8">@(Model.Location?.LocationName ?? "—")</dd>
-
-                    <dt class="col-sm-4">Condition</dt>
-                    <dd class="col-sm-8">@(Model.CurrentCondition?.Description ?? "—")</dd>
-
-                    <dt class="col-sm-4">Availability Status</dt>
-                    <dd class="col-sm-8">@(Model.OperationalStatus?.Description ?? "—")</dd>
-
-                    <dt class="col-sm-4">Active</dt>
-                    <dd class="col-sm-8">@(Model.IsActive ? "Yes" : "No")</dd>
-
-                    <dt class="col-sm-4">Created</dt>
-                    <dd class="col-sm-8">@Model.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</dd>
-
-                    <dt class="col-sm-4 mt-2">Description</dt>
-                    <dd class="col-sm-8 mt-2">@(Model.Description ?? "—")</dd>
-                </dl>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">Inventory Balance</div>
-            <div class="card-body">
-                @if (Model.EquipmentInventoryBalance == null)
+<div class="row" style="gap:20px;align-items:flex-start">
+    <div style="flex:1.2;min-width:0">
+        <div class="card">
+            <div class="eq-img" style="height:220px;overflow:hidden">
+                @if (!string.IsNullOrWhiteSpace(Model.ImagePath))
                 {
-                    <div class="text-muted">No inventory balance recorded for this equipment yet.</div>
+                    <img src="@Model.ImagePath" alt="@Model.EquipmentName" style="width:100%;height:100%;object-fit:cover" />
                 }
                 else
                 {
-                    <dl class="row mb-0">
-                        <dt class="col-sm-6">Total Quantity</dt>
-                        <dd class="col-sm-6">@Model.EquipmentInventoryBalance.TotalQuantity</dd>
-
-                        <dt class="col-sm-6">Reserved</dt>
-                        <dd class="col-sm-6">@Model.EquipmentInventoryBalance.ReservedQuantity</dd>
-
-                        <dt class="col-sm-6">Released</dt>
-                        <dd class="col-sm-6">@Model.EquipmentInventoryBalance.ReleasedQuantity</dd>
-
-                        <dt class="col-sm-6">Awaiting Inspection</dt>
-                        <dd class="col-sm-6">@Model.EquipmentInventoryBalance.AwaitingInspectionQuantity</dd>
-
-                        <dt class="col-sm-6">Maintenance</dt>
-                        <dd class="col-sm-6">@Model.EquipmentInventoryBalance.MaintenanceQuantity</dd>
-
-                        <dt class="col-sm-6">Unreconciled</dt>
-                        <dd class="col-sm-6">@Model.EquipmentInventoryBalance.UnreconciledQuantity</dd>
-                    </dl>
+                    <svg class="ic" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+                }
+            </div>
+            <div class="card-bd">
+                <div class="kv">
+                    <div class="kv-row"><div class="kv-k">Asset Code</div><div class="kv-v">@Model.AssetCode</div></div>
+                    <div class="kv-row"><div class="kv-k">Category</div><div class="kv-v">@(Model.EquipmentCategory?.CategoryName ?? "-")</div></div>
+                    <div class="kv-row"><div class="kv-k">Location</div><div class="kv-v">@(Model.Location?.LocationName ?? "-")</div></div>
+                    <div class="kv-row"><div class="kv-k">Condition</div><div class="kv-v">@(Model.CurrentCondition?.Description ?? "-")</div></div>
+                    <div class="kv-row"><div class="kv-k">Availability Status</div><div class="kv-v">@(Model.OperationalStatus?.Description ?? "-")</div></div>
+                    <div class="kv-row"><div class="kv-k">Active</div><div class="kv-v">@(Model.IsActive ? "Yes" : "No")</div></div>
+                    <div class="kv-row"><div class="kv-k">Created</div><div class="kv-v">@Model.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</div></div>
+                    <div class="kv-row last"><div class="kv-k">Description</div><div class="kv-v">@(string.IsNullOrWhiteSpace(Model.Description) ? "-" : Model.Description)</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div style="flex:1;min-width:0">
+        <div class="card">
+            <div class="card-hd"><div class="card-hd-txt"><div class="card-title">Inventory Balance</div></div></div>
+            <div class="card-bd">
+                @if (Model.EquipmentInventoryBalance == null)
+                {
+                    <div class="empty">
+                        <div class="empty-t">No inventory balance</div>
+                        <div class="empty-s">No inventory balance is recorded for this equipment yet.</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="kv">
+                        <div class="kv-row"><div class="kv-k">Total Quantity</div><div class="kv-v">@Model.EquipmentInventoryBalance.TotalQuantity</div></div>
+                        <div class="kv-row"><div class="kv-k">Reserved</div><div class="kv-v">@Model.EquipmentInventoryBalance.ReservedQuantity</div></div>
+                        <div class="kv-row"><div class="kv-k">Released</div><div class="kv-v">@Model.EquipmentInventoryBalance.ReleasedQuantity</div></div>
+                        <div class="kv-row"><div class="kv-k">Awaiting Inspection</div><div class="kv-v">@Model.EquipmentInventoryBalance.AwaitingInspectionQuantity</div></div>
+                        <div class="kv-row"><div class="kv-k">Maintenance</div><div class="kv-v">@Model.EquipmentInventoryBalance.MaintenanceQuantity</div></div>
+                        <div class="kv-row last"><div class="kv-k">Unreconciled</div><div class="kv-v">@Model.EquipmentInventoryBalance.UnreconciledQuantity</div></div>
+                    </div>
                 }
             </div>
         </div>

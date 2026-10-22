@@ -2,6 +2,8 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using ASI.Basecode.WebApp.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using ASI.Basecode.Resources.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -13,20 +15,43 @@ using System.Linq;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
+    [Authorize(Roles = RoleCodes.Staff)]
     public class CustodianController : ControllerBase<CustodianController>
     {
         private readonly ICustodianService _custodianService;
+        private readonly IDashboardService _dashboardService;
 
         public CustodianController(
             IHttpContextAccessor httpContextAccessor,
             ILoggerFactory loggerFactory,
             IConfiguration configuration,
             IMapper mapper,
-            ICustodianService custodianService)
+            ICustodianService custodianService,
+            IDashboardService dashboardService)
             : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
             this._custodianService = custodianService;
+            this._dashboardService = dashboardService;
         }
+
+        /// <summary>
+        /// [3.0] Custodian dashboard. Route alias at /Custodian as well.
+        /// </summary>
+        public IActionResult Dashboard()
+        {
+            try
+            {
+                return this.View(this._dashboardService.GetCustodianDashboard());
+            }
+            catch (Exception ex)
+            {
+                this.HandleExceptionLog(ex, "Dashboard");
+                this.TempData["ErrorMessage"] = "Unable to load the dashboard.";
+                return this.View(new CustodianDashboardViewModel());
+            }
+        }
+
+        public IActionResult Index() => this.RedirectToAction(nameof(this.Dashboard));
 
         public IActionResult Reservations(string search, long? status, int page = 1, int pageSize = 10)
         {

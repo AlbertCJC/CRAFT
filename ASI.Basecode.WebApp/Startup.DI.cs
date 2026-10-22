@@ -28,8 +28,19 @@ namespace ASI.Basecode.WebApp
             // Common
             this._services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            // Current operator (stand-in for identity until auth is reintroduced)
+            // Current operator identity (cookie claims, with session fallback)
             this._services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+            // Authentication (1.1-1.4) and startup seeding
+            this._services.AddScoped<IAuthService, AuthService>();
+            this._services.AddScoped<IDatabaseSeeder, DatabaseSeeder>();
+
+            // Role dashboards (2.0 / 3.0) and profile & settings (2.10 / 3.10 / 4.8)
+            this._services.AddScoped<IDashboardService, DashboardService>();
+            this._services.AddScoped<IProfileService, ProfileService>();
+
+            // Borrower borrowings (2.6 / 2.7 / 2.8)
+            this._services.AddScoped<IBorrowingService, BorrowingService>();
 
             // Equipment administration
             this._services.AddScoped<IEquipmentRepository, EquipmentRepository>();

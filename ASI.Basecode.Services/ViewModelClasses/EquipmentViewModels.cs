@@ -30,6 +30,8 @@ namespace ASI.Basecode.Services.ViewModelClasses
         public int AvailableUnits { get; set; }
 
         public bool IsActive { get; set; }
+
+        public string ImagePath { get; set; }
     }
 
     /// <summary>
@@ -75,6 +77,9 @@ namespace ASI.Basecode.Services.ViewModelClasses
 
         [Display(Name = "Active")]
         public bool IsActive { get; set; } = true;
+
+        /// <summary>Existing/uploaded web-relative image path.</summary>
+        public string ImagePath { get; set; }
     }
 
     /// <summary>

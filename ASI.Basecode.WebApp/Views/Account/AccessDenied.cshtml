@@ -1,0 +1,18 @@
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Access Denied";
+}
+<div class="cp-auth-card">
+    <h1 class="cp-auth-title">Access Denied</h1>
+    <p class="cp-auth-subtitle">You are not authorized to access this page.</p>
+
+    <div class="cp-alert cp-alert-error">
+        Your account role does not permit this screen. Return to your dashboard to continue.
+    </div>
+
+    <a href="/" class="cp-btn cp-btn-primary" style="width:100%;justify-content:center;">Back to My Dashboard</a>
+
+    <p class="text-center" style="font-size:12.5px;color:var(--color-text-gray);margin:16px 0 0;">
+        <a href="/Account/Login" class="cp-auth-link">Sign in with a different account</a>
+    </p>
+</div>
