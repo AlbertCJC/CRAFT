@@ -45,6 +45,12 @@ public partial class AllianceDbContext
                 .HasColumnName("image_path");
         });
 
+        modelBuilder.Entity<Borrowing>(entity =>
+        {
+            entity.Property(e => e.DueReminderSentAtUtc).HasColumnName("due_reminder_sent_at_utc");
+            entity.Property(e => e.OverdueNotifiedAtUtc).HasColumnName("overdue_notified_at_utc");
+        });
+
         modelBuilder.Entity<UserPreference>(entity =>
         {
             entity.HasKey(e => e.UserId);

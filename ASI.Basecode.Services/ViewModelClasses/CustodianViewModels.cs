@@ -71,7 +71,9 @@ namespace ASI.Basecode.Services.ViewModelClasses
         public string CategoryName { get; set; }
         public string LocationName { get; set; }
         public string PickupLocationName { get; set; }
+        /// <summary>Units still releasable (approved minus already released).</summary>
         public int ApprovedQuantity { get; set; }
+        public int AlreadyReleasedQuantity { get; set; }
         public DateTime ExpectedReturnAtUtc { get; set; }
         public bool CanRelease { get; set; }
         public bool ActiveBorrowingExists { get; set; }

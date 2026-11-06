@@ -143,6 +143,13 @@ namespace ASI.Basecode.Data.Repositories
             return this.Context.Borrowings.Count(b => b.ReservationId == reservationId);
         }
 
+        public int SumReleasedForReservation(long reservationId)
+        {
+            return this.Context.Borrowings
+                .Where(b => b.ReservationId == reservationId)
+                .Sum(b => (int?)b.ReleasedQuantity) ?? 0;
+        }
+
         public string GetNextTransactionNumber(int year)
         {
             var prefix = $"TXN-{year}-";

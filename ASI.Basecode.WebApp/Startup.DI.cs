@@ -58,6 +58,12 @@ namespace ASI.Basecode.WebApp
             this._services.AddScoped<IReservationRepository, ReservationRepository>();
             this._services.AddScoped<IReservationService, ReservationService>();
 
+            // Reservation lifecycle automation (expiry, overdue, due-soon reminders)
+            this._services.Configure<ASI.Basecode.Services.ReservationLifecycleOptions>(
+                this.Configuration.GetSection(ASI.Basecode.Services.ReservationLifecycleOptions.SectionName));
+            this._services.AddScoped<IReservationLifecycleService, ReservationLifecycleService>();
+            this._services.AddHostedService<ASI.Basecode.WebApp.Mvc.ReservationLifecycleWorker>();
+
             // Custodian assignment, routing and scoping
             this._services.AddScoped<ICustodianAssignmentService, CustodianAssignmentService>();
 

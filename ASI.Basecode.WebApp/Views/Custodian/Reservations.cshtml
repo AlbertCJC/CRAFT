@@ -59,7 +59,7 @@ else
                         <td class="text-center">@r.RequestedQuantity</td>
                         <td>@(r.PickupLocationName ?? "—")</td>
                         <td>
-                            <span class="cp-badge @(r.StatusCode == "PENDING" ? "cp-badge-warning" : r.StatusCode == "APPROVED" ? "cp-badge-info" : r.StatusCode == "COMPLETED" ? "cp-badge-success" : "cp-badge-neutral")">
+                            <span class="cp-badge @(r.StatusCode == "PENDING" ? "cp-badge-warning" : r.StatusCode == "APPROVED" || r.StatusCode == "PARTIALLY_RELEASED" ? "cp-badge-info" : r.StatusCode == "COMPLETED" ? "cp-badge-success" : r.StatusCode == "EXPIRED" ? "cp-badge-error" : "cp-badge-neutral")">
                                 @r.StatusDescription
                             </span>
                         </td>
@@ -84,7 +84,7 @@ else
                                 </form>
                             }
                             <a asp-action="Review" asp-route-id="@r.ReservationId" class="cp-btn cp-btn-secondary cp-btn-sm">Review</a>
-                            @if (r.StatusCode == "APPROVED")
+                            @if (r.StatusCode == "APPROVED" || r.StatusCode == "PARTIALLY_RELEASED")
                             {
                                 <a asp-action="Release" asp-route-id="@r.ReservationId" class="cp-btn cp-btn-success cp-btn-sm" style="margin-left:4px;">Release</a>
                             }

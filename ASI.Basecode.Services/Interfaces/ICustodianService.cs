@@ -11,6 +11,9 @@ namespace ASI.Basecode.Services.Interfaces
         /// <summary>Takes an unassigned PENDING/APPROVED reservation from the shared pool.</summary>
         (bool Success, string Error) Claim(long reservationId);
 
+        /// <summary>Custodian cancels an open reservation with a reason, releasing its held units.</summary>
+        (bool Success, string Error) Cancel(long reservationId, string reason);
+
 
         (bool Success, string Error) Approve(long reservationId, string notes);
 

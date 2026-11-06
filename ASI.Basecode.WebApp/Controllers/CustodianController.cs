@@ -95,6 +95,20 @@ namespace ASI.Basecode.WebApp.Controllers
                 : this.RedirectToAction(nameof(this.Reservations));
         }
 
+        /// <summary>
+        /// Custodian-side cancel (no-show, item withdrawn, duplicate) with a required reason.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Cancel(long id, string reason)
+        {
+            var (success, error) = this._custodianService.Cancel(id, reason);
+            this.TempData[success ? "SuccessMessage" : "ErrorMessage"] = success ? "Reservation cancelled." : error;
+            return success
+                ? this.RedirectToAction(nameof(this.Reservations))
+                : this.RedirectToAction(nameof(this.Review), new { id });
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Approve(long id, string notes)

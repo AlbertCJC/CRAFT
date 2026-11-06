@@ -127,12 +127,7 @@ namespace ASI.Basecode.Services.Services
                 entity.ApprovedQuantity = entity.RequestedQuantity;
                 entity.HeldQuantity = entity.RequestedQuantity;
 
-                // hold the units on the balance
-                var balance = entity.Equipment.EquipmentInventoryBalance;
-                if (balance != null)
-                {
-                    balance.ReservedQuantity += entity.RequestedQuantity;
-                }
+                // The units were held on the balance at submit time (ReservationService.Create).
 
                 this._unitOfWork.SaveChanges();
 
@@ -182,7 +177,10 @@ namespace ASI.Basecode.Services.Services
                     return (false, ErrorMessages.ServerError);
                 }
 
+                var heldUnits = this.RemainingHold(entity);
                 entity.StatusId = rejectedStatus.StatusId;
+                ReleaseHold(entity, heldUnits);
+                entity.HeldQuantity = 0;
                 this._unitOfWork.SaveChanges();
 
                 this.WriteNotification(entity.BorrowerUserId, "Reservation rejected",
@@ -219,10 +217,11 @@ namespace ASI.Basecode.Services.Services
                 CategoryName = entity.Equipment.EquipmentCategory.CategoryName,
                 LocationName = entity.Equipment.Location?.LocationName,
                 PickupLocationName = entity.PickupLocation?.LocationName,
-                ApprovedQuantity = entity.ApprovedQuantity > 0 ? entity.ApprovedQuantity : entity.RequestedQuantity,
+                ApprovedQuantity = this.RemainingHold(entity),
+                AlreadyReleasedQuantity = this._repository.SumReleasedForReservation(reservationId),
                 ExpectedReturnAtUtc = entity.ExpectedReturnAtUtc,
-                CanRelease = entity.Status.Code == "APPROVED" &&
-                             this._repository.CountActiveBorrowingsForReservation(reservationId) == 0,
+                CanRelease = (entity.Status.Code == "APPROVED" || entity.Status.Code == "PARTIALLY_RELEASED") &&
+                             this.RemainingHold(entity) > 0,
                 ConditionOptions = this.DbContext.Conditions.AsNoTracking()
                     .OrderBy(c => c.Code).Select(c => new LookupViewModel { Id = c.ConditionId, Text = c.Description }).ToList(),
                 ActiveBorrowingExists = this._repository.CountActiveBorrowingsForReservation(reservationId) > 0,
@@ -247,17 +246,17 @@ namespace ASI.Basecode.Services.Services
                 {
                     return (false, ErrorMessages.CustodianNotAssigned, 0);
                 }
-                if (entity.Status.Code != "APPROVED")
+                if (entity.Status.Code != "APPROVED" && entity.Status.Code != "PARTIALLY_RELEASED")
                 {
                     return (false, ErrorMessages.CustodianReleaseNotApproved, 0);
                 }
                 this.ClaimIfPooled(entity);
-                if (this._repository.CountActiveBorrowingsForReservation(form.ReservationId) > 0)
+
+                var maxQty = this.RemainingHold(entity);
+                if (maxQty < 1)
                 {
                     return (false, ErrorMessages.CustodianReleaseNotApproved, 0);
                 }
-
-                var maxQty = entity.ApprovedQuantity > 0 ? entity.ApprovedQuantity : entity.RequestedQuantity;
                 if (form.ReleasedQuantity > maxQty)
                 {
                     return (false, ErrorMessages.CustodianReleaseQuantityInvalid, 0);
@@ -329,11 +328,17 @@ namespace ASI.Basecode.Services.Services
                     PerformedByUserId = borrowing.ReleasedByUserId,
                 });
 
-                // mark reservation as completed (released)
-                var completedStatus = this.DbContext.ReservationStatuses.FirstOrDefault(s => s.Code == "COMPLETED");
-                if (completedStatus != null)
+                // Fully released → COMPLETED; otherwise the rest stays held for a later release.
+                entity.HeldQuantity = Math.Max(0, maxQty - form.ReleasedQuantity);
+                var nextCode = entity.HeldQuantity == 0 ? "COMPLETED" : "PARTIALLY_RELEASED";
+                var nextStatus = this.DbContext.ReservationStatuses.FirstOrDefault(s => s.Code == nextCode);
+                if (nextStatus != null)
                 {
-                    entity.StatusId = completedStatus.StatusId;
+                    entity.StatusId = nextStatus.StatusId;
+                }
+                if (entity.HeldQuantity == 0)
+                {
+                    entity.CompletedAtUtc = DateTime.UtcNow;
                 }
 
                 this._unitOfWork.SaveChanges();
@@ -354,6 +359,95 @@ namespace ASI.Basecode.Services.Services
                 this._logger.LogError(ex, "Failed to release reservation {ReservationId}.", form?.ReservationId);
                 return (false, ErrorMessages.ServerError, 0);
             }
+        }
+
+        public (bool Success, string Error) Cancel(long reservationId, string reason)
+        {
+            reason = reason?.Trim();
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return (false, ErrorMessages.CustodianRejectReasonRequired);
+            }
+
+            try
+            {
+                var entity = this._repository.GetReservationWithDetails(reservationId);
+                if (entity == null)
+                {
+                    return (false, ErrorMessages.CustodianReservationNotFound);
+                }
+                if (!this._currentUser.CanActOn(entity.AssignedCustodianUserId))
+                {
+                    return (false, ErrorMessages.CustodianNotAssigned);
+                }
+
+                var code = entity.Status.Code;
+                if (code != "PENDING" && code != "APPROVED" && code != "READY_FOR_RELEASE" && code != "PARTIALLY_RELEASED")
+                {
+                    return (false, ErrorMessages.CustodianReservationNotPending);
+                }
+
+                // A partially released reservation keeps its borrowing; only the unreleased rest is cancelled.
+                var targetCode = code == "PARTIALLY_RELEASED" ? "COMPLETED" : "CANCELLED";
+                var target = this.DbContext.ReservationStatuses.FirstOrDefault(s => s.Code == targetCode);
+                if (target == null)
+                {
+                    return (false, ErrorMessages.ServerError);
+                }
+
+                var released = ReleaseHold(entity, this.RemainingHold(entity));
+                entity.HeldQuantity = 0;
+                entity.StatusId = target.StatusId;
+                entity.CompletedAtUtc = DateTime.UtcNow;
+                this.ClaimIfPooled(entity);
+                this._unitOfWork.SaveChanges();
+
+                this.WriteNotification(entity.BorrowerUserId, "Reservation cancelled",
+                    $"Your reservation {entity.ReservationNumber} for {entity.Equipment.EquipmentName} was cancelled by the custodian. Reason: {reason}");
+
+                this.WriteAudit("CANCEL", "Reservation", entity.ReservationId, entity.ReservationNumber,
+                    $"Cancelled reservation {entity.ReservationNumber} ({released} held unit(s) released). Reason: {reason}");
+
+                return (true, null);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return (false, ErrorMessages.CustodianReservationNotPending);
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError(ex, "Failed to cancel reservation {ReservationId}.", reservationId);
+                return (false, ErrorMessages.ServerError);
+            }
+        }
+
+        /// <summary>
+        /// Units still held on the balance for this reservation: the full request while PENDING,
+        /// otherwise the approved quantity minus what has already been released.
+        /// </summary>
+        private int RemainingHold(Reservation entity)
+        {
+            if (entity.Status?.Code == "PENDING")
+            {
+                return entity.RequestedQuantity;
+            }
+
+            var approved = entity.ApprovedQuantity > 0 ? entity.ApprovedQuantity : entity.RequestedQuantity;
+            return Math.Max(0, approved - this._repository.SumReleasedForReservation(entity.ReservationId));
+        }
+
+        /// <summary>Returns held units to the available pool. Returns how many were released.</summary>
+        private static int ReleaseHold(Reservation entity, int quantity)
+        {
+            var balance = entity.Equipment?.EquipmentInventoryBalance;
+            if (balance == null || quantity <= 0)
+            {
+                return 0;
+            }
+
+            var released = Math.Min(quantity, balance.ReservedQuantity);
+            balance.ReservedQuantity -= released;
+            return released;
         }
 
         public (bool Success, string Error) Claim(long reservationId)

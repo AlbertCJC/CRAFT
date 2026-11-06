@@ -29,6 +29,7 @@ namespace ASI.Basecode.Services.Services
         private readonly ICurrentUserService _currentUser;
         private readonly INotificationDispatcher _notifications;
         private readonly ICustodianAssignmentService _assignments;
+        private readonly ReservationLifecycleOptions _lifecycle;
         private readonly IMapper _mapper;
 
         /// <summary>Direct EF access for codebook lookups and the small writes this service owns.</summary>
@@ -41,6 +42,7 @@ namespace ASI.Basecode.Services.Services
             ICurrentUserService currentUser,
             INotificationDispatcher notifications,
             ICustodianAssignmentService assignments,
+            Microsoft.Extensions.Options.IOptions<ReservationLifecycleOptions> lifecycle,
             IMapper mapper)
             : base(loggerFactory)
         {
@@ -49,6 +51,7 @@ namespace ASI.Basecode.Services.Services
             this._currentUser = currentUser;
             this._notifications = notifications;
             this._assignments = assignments;
+            this._lifecycle = lifecycle?.Value ?? new ReservationLifecycleOptions();
             this._mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -283,7 +286,7 @@ namespace ASI.Basecode.Services.Services
                     PickupLocationId = form.PickupLocationId.Value,
                     RequestedQuantity = form.Quantity.Value,
                     ApprovedQuantity = 0,
-                    HeldQuantity = 0,
+                    HeldQuantity = form.Quantity.Value, // held on the balance below
                     RequestedStartAtUtc = requestedStart,
                     ExpectedReturnAtUtc = expectedReturn,
                     Purpose = form.Purpose?.Trim(),
@@ -473,7 +476,7 @@ namespace ASI.Basecode.Services.Services
                     MaxActiveTransactions = 3,
                     ReservationLeadTimeDays = 1,
                     MaxAdvanceBookingDays = 30,
-                    AutoCancelHours = 24,
+                    AutoCancelHours = this._lifecycle.AutoCancelHours,
                     FacultyMaxBorrowDays = 21,
                     BlockReservationWhenOverdue = true,
                 };
@@ -490,7 +493,7 @@ namespace ASI.Basecode.Services.Services
                 MaxActiveTransactions = latest.MaxActiveBorrowingUnits,
                 ReservationLeadTimeDays = 1,
                 MaxAdvanceBookingDays = 30,
-                AutoCancelHours = 24,
+                AutoCancelHours = this._lifecycle.AutoCancelHours,
                 FacultyMaxBorrowDays = 21,
                 BlockReservationWhenOverdue = latest.BlockReservationWhenOverdue,
             };

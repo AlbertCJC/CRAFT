@@ -45,6 +45,7 @@ namespace ASI.Basecode.Services.Services
             // Each feature schema step is isolated so one failure doesn't block the others.
             this.RunSchemaStep("account lifecycle", this.EnsureAccountLifecycleSchema);
             this.RunSchemaStep("custodian assignments", this.EnsureCustodianAssignmentSchema);
+            this.RunSchemaStep("reservation lifecycle", this.EnsureLifecycleSchema);
 
             try
             {
@@ -92,6 +93,17 @@ IF COL_LENGTH('dbo.users', 'failed_login_count') IS NULL
 
 IF COL_LENGTH('dbo.users', 'lockout_until_utc') IS NULL
     ALTER TABLE dbo.users ADD lockout_until_utc datetime2 NULL;");
+        }
+
+        /// <summary>Once-only reminder markers on <c>borrowings</c> for the lifecycle job.</summary>
+        private void EnsureLifecycleSchema()
+        {
+            this.DbContext.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('dbo.borrowings', 'due_reminder_sent_at_utc') IS NULL
+    ALTER TABLE dbo.borrowings ADD due_reminder_sent_at_utc datetime2 NULL;
+
+IF COL_LENGTH('dbo.borrowings', 'overdue_notified_at_utc') IS NULL
+    ALTER TABLE dbo.borrowings ADD overdue_notified_at_utc datetime2 NULL;");
         }
 
         /// <summary>Custodian ownership (borrower / location / category) and reservation routing.</summary>
@@ -217,6 +229,15 @@ END;");
             {
                 db.AccountStatuses.Add(new AccountStatus { Code = AccountStatusCodes.Rejected, Description = "Rejected" });
                 changed = true;
+            }
+
+            foreach (var (code, description) in new[] { ("EXPIRED", "Expired"), ("PARTIALLY_RELEASED", "Partially Released") })
+            {
+                if (!db.ReservationStatuses.Any(s => s.Code == code))
+                {
+                    db.ReservationStatuses.Add(new ReservationStatus { Code = code, Description = description });
+                    changed = true;
+                }
             }
 
             if (changed)
