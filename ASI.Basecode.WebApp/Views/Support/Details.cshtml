@@ -35,7 +35,7 @@
 
         @foreach (var r in Model.Replies)
         {
-            <div class="cp-card" style="@(r.AuthorIsStaff ? "border-left:3px solid var(--color-primary, #168A5B);" : "")">
+            <div class="cp-card" style="@(r.AuthorIsStaff ? "background:var(--color-primary-tint-3);" : "")">
                 <div class="cp-cell-sub" style="margin-bottom:6px;">
                     @r.AuthorName @(r.AuthorIsStaff ? "(Property Office)" : "") &middot; @r.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy, h:mm tt")
                 </div>
