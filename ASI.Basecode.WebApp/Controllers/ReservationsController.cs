@@ -163,6 +163,24 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         /// <summary>
+        /// Printable pickup slip with a QR of the reservation number; the custodian scans it to
+        /// open the release form. Same visibility rules as Details.
+        /// </summary>
+        public IActionResult Slip(long id)
+        {
+            var model = this._reservationService.GetDetailsViewModel(id);
+            if (model == null)
+            {
+                this.TempData["ErrorMessage"] = ErrorMessages.ReservationNotFound;
+                return this.RedirectToAction(nameof(this.Mine));
+            }
+
+            var scanUrl = this.Url.Action("Scan", "Custodian", new { code = model.ReservationNumber }, this.Request.Scheme);
+            this.ViewBag.QrSvg = QrCode.ToSvg(scanUrl);
+            return this.View(model);
+        }
+
+        /// <summary>
         /// Cancels the borrower's own PENDING/APPROVED reservation.
         /// </summary>
         [Authorize(Roles = RoleCodes.Borrower)]

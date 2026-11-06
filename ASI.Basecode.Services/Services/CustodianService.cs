@@ -421,6 +421,76 @@ namespace ASI.Basecode.Services.Services
             }
         }
 
+        public ScanResultViewModel ResolveScan(string code)
+        {
+            var result = new ScanResultViewModel { Code = code?.Trim(), Searched = !string.IsNullOrWhiteSpace(code) };
+            if (!result.Searched)
+            {
+                return result;
+            }
+
+            var term = result.Code.ToUpperInvariant();
+            var scope = this._currentUser.GetCustodianScope();
+
+            // 1) Reservation number (printed on the pickup slip).
+            var reservation = this.DbContext.Reservations.AsNoTracking()
+                .Where(r => r.ReservationNumber.ToUpper() == term)
+                .Where(r => scope == null || r.AssignedCustodianUserId == null || r.AssignedCustodianUserId == scope)
+                .Select(r => new { r.ReservationId, r.ReservationNumber, Status = r.Status.Code, StatusText = r.Status.Description, r.Equipment.EquipmentName, Borrower = r.BorrowerUser.FirstName + " " + r.BorrowerUser.LastName })
+                .FirstOrDefault();
+            if (reservation != null)
+            {
+                result.EquipmentName = reservation.EquipmentName;
+                result.Matches.Add(new ScanMatchViewModel
+                {
+                    Kind = reservation.Status == "APPROVED" || reservation.Status == "PARTIALLY_RELEASED" ? "RELEASE" : "REVIEW",
+                    Id = reservation.ReservationId,
+                    Title = reservation.ReservationNumber,
+                    Subtitle = $"{reservation.Borrower} · {reservation.StatusText}",
+                });
+                return result;
+            }
+
+            // 2) Equipment asset code (printed on the item label).
+            var equipment = this.DbContext.Equipment.AsNoTracking()
+                .Where(e => e.AssetCode.ToUpper() == term)
+                .Select(e => new { e.EquipmentId, e.EquipmentName })
+                .FirstOrDefault();
+            if (equipment == null)
+            {
+                return result;
+            }
+
+            result.EquipmentName = equipment.EquipmentName;
+            result.Matches.AddRange(this.DbContext.Reservations.AsNoTracking()
+                .Where(r => r.EquipmentId == equipment.EquipmentId && (r.Status.Code == "APPROVED" || r.Status.Code == "PARTIALLY_RELEASED"))
+                .Where(r => scope == null || r.AssignedCustodianUserId == null || r.AssignedCustodianUserId == scope)
+                .OrderBy(r => r.RequestedStartAtUtc)
+                .Select(r => new ScanMatchViewModel
+                {
+                    Kind = "RELEASE",
+                    Id = r.ReservationId,
+                    Title = "Release " + r.ReservationNumber,
+                    Subtitle = r.BorrowerUser.FirstName + " " + r.BorrowerUser.LastName + " · " + r.ApprovedQuantity + " unit(s)",
+                })
+                .ToList());
+            result.Matches.AddRange(this.DbContext.Borrowings.AsNoTracking()
+                .Where(b => b.EquipmentId == equipment.EquipmentId
+                    && (b.Status.Code == "ACTIVE" || b.Status.Code == "PARTIALLY_RETURNED" || b.Status.Code == "OVERDUE"))
+                .Where(b => scope == null || b.Reservation == null || b.Reservation.AssignedCustodianUserId == null || b.Reservation.AssignedCustodianUserId == scope)
+                .OrderBy(b => b.DueAtUtc)
+                .Select(b => new ScanMatchViewModel
+                {
+                    Kind = "RETURN",
+                    Id = b.BorrowingId,
+                    Title = "Return " + b.TransactionNumber,
+                    Subtitle = b.BorrowerUser.FirstName + " " + b.BorrowerUser.LastName + " · " + b.Status.Description,
+                })
+                .ToList());
+
+            return result;
+        }
+
         /// <summary>
         /// Units still held on the balance for this reservation: the full request while PENDING,
         /// otherwise the approved quantity minus what has already been released.
