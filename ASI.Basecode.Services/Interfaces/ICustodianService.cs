@@ -8,6 +8,9 @@ namespace ASI.Basecode.Services.Interfaces
         CustodianReservationsIndexViewModel GetReservationsIndex(string search, long? statusId, int page, int pageSize);
 
         ReservationReviewViewModel GetReservationReview(long reservationId);
+        /// <summary>Takes an unassigned PENDING/APPROVED reservation from the shared pool.</summary>
+        (bool Success, string Error) Claim(long reservationId);
+
 
         (bool Success, string Error) Approve(long reservationId, string notes);
 

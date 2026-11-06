@@ -58,6 +58,9 @@ namespace ASI.Basecode.WebApp
             this._services.AddScoped<IReservationRepository, ReservationRepository>();
             this._services.AddScoped<IReservationService, ReservationService>();
 
+            // Custodian assignment, routing and scoping
+            this._services.AddScoped<ICustodianAssignmentService, CustodianAssignmentService>();
+
             // Custodian console
             this._services.AddScoped<ICustodianRepository, CustodianRepository>();
             this._services.AddScoped<ICustodianService, CustodianService>();

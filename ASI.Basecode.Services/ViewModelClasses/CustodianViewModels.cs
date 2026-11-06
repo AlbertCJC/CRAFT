@@ -7,6 +7,9 @@ namespace ASI.Basecode.Services.ViewModelClasses
     public class CustodianReservationRowViewModel
     {
         public long ReservationId { get; set; }
+        public long? AssignedCustodianUserId { get; set; }
+        /// <summary>Null means the reservation is in the shared pool.</summary>
+        public string AssignedCustodianName { get; set; }
         public string ReservationNumber { get; set; }
         public string BorrowerName { get; set; }
         public string EquipmentName { get; set; }
@@ -31,6 +34,8 @@ namespace ASI.Basecode.Services.ViewModelClasses
     public class ReservationReviewViewModel
     {
         public long ReservationId { get; set; }
+        public string AssignedCustodianName { get; set; }
+        public bool CanClaim { get; set; }
         public string ReservationNumber { get; set; }
         public string StatusCode { get; set; }
         public string StatusDescription { get; set; }

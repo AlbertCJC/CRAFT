@@ -129,7 +129,7 @@ namespace ASI.Basecode.Data.Repositories
             var referencesBorrowing = this.Context.Borrowings
                 .Any(b => b.BorrowerUserId == userId || b.ReleasedByUserId == userId);
             var referencesReservation = this.Context.Reservations
-                .Any(r => r.BorrowerUserId == userId);
+                .Any(r => r.BorrowerUserId == userId || r.AssignedCustodianUserId == userId);
             var referencesMovement = this.Context.InventoryMovements
                 .Any(m => m.PerformedByUserId == userId);
 

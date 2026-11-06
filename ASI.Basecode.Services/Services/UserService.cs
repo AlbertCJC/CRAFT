@@ -294,6 +294,12 @@ namespace ASI.Basecode.Services.Services
                     return (false, ErrorMessages.UserDeleteBlocked);
                 }
 
+                // Assignment rows use NO ACTION foreign keys, so clear them explicitly.
+                var assignments = this.DbContext.CustodianAssignments
+                    .Where(a => a.CustodianUserId == userId || a.BorrowerUserId == userId)
+                    .ToList();
+                this.DbContext.CustodianAssignments.RemoveRange(assignments);
+
                 this.DbContext.Users.Remove(entity);
                 this._unitOfWork.SaveChanges();
 

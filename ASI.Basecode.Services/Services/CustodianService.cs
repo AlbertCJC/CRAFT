@@ -44,7 +44,7 @@ namespace ASI.Basecode.Services.Services
 
         public CustodianReservationsIndexViewModel GetReservationsIndex(string search, long? statusId, int page, int pageSize)
         {
-            var result = this._repository.GetReservationsPaged(search, statusId, page, pageSize);
+            var result = this._repository.GetReservationsPaged(search, statusId, page, pageSize, this._currentUser.GetCustodianScope());
             return new CustodianReservationsIndexViewModel
             {
                 Page = new PagedResult<CustodianReservationRowViewModel>
@@ -64,13 +64,15 @@ namespace ASI.Basecode.Services.Services
         public ReservationReviewViewModel GetReservationReview(long reservationId)
         {
             var entity = this._repository.GetReservationWithDetails(reservationId);
-            if (entity == null)
+            if (entity == null || !this._currentUser.CanActOn(entity.AssignedCustodianUserId))
             {
                 return null;
             }
 
             return new ReservationReviewViewModel
             {
+                AssignedCustodianName = entity.AssignedCustodianUser == null ? null : entity.AssignedCustodianUser.FirstName + " " + entity.AssignedCustodianUser.LastName,
+                CanClaim = entity.AssignedCustodianUserId == null && (entity.Status.Code == "PENDING" || entity.Status.Code == "APPROVED"),
                 ReservationId = entity.ReservationId,
                 ReservationNumber = entity.ReservationNumber,
                 StatusCode = entity.Status.Code,
@@ -105,10 +107,15 @@ namespace ASI.Basecode.Services.Services
                 {
                     return (false, ErrorMessages.CustodianReservationNotFound);
                 }
+                if (!this._currentUser.CanActOn(entity.AssignedCustodianUserId))
+                {
+                    return (false, ErrorMessages.CustodianNotAssigned);
+                }
                 if (entity.Status.Code != "PENDING")
                 {
                     return (false, ErrorMessages.CustodianReservationNotPending);
                 }
+                this.ClaimIfPooled(entity);
 
                 var approvedStatus = this.DbContext.ReservationStatuses.FirstOrDefault(s => s.Code == "APPROVED");
                 if (approvedStatus == null)
@@ -159,10 +166,15 @@ namespace ASI.Basecode.Services.Services
                 {
                     return (false, ErrorMessages.CustodianReservationNotFound);
                 }
+                if (!this._currentUser.CanActOn(entity.AssignedCustodianUserId))
+                {
+                    return (false, ErrorMessages.CustodianNotAssigned);
+                }
                 if (entity.Status.Code != "PENDING")
                 {
                     return (false, ErrorMessages.CustodianReservationNotPending);
                 }
+                this.ClaimIfPooled(entity);
 
                 var rejectedStatus = this.DbContext.ReservationStatuses.FirstOrDefault(s => s.Code == "REJECTED");
                 if (rejectedStatus == null)
@@ -191,7 +203,7 @@ namespace ASI.Basecode.Services.Services
         public ReleaseContextViewModel GetReleaseContext(long reservationId)
         {
             var entity = this._repository.GetReservationWithDetails(reservationId);
-            if (entity == null)
+            if (entity == null || !this._currentUser.CanActOn(entity.AssignedCustodianUserId))
             {
                 return null;
             }
@@ -231,10 +243,15 @@ namespace ASI.Basecode.Services.Services
                 {
                     return (false, ErrorMessages.CustodianReservationNotFound, 0);
                 }
+                if (!this._currentUser.CanActOn(entity.AssignedCustodianUserId))
+                {
+                    return (false, ErrorMessages.CustodianNotAssigned, 0);
+                }
                 if (entity.Status.Code != "APPROVED")
                 {
                     return (false, ErrorMessages.CustodianReleaseNotApproved, 0);
                 }
+                this.ClaimIfPooled(entity);
                 if (this._repository.CountActiveBorrowingsForReservation(form.ReservationId) > 0)
                 {
                     return (false, ErrorMessages.CustodianReleaseNotApproved, 0);
@@ -273,7 +290,7 @@ namespace ASI.Basecode.Services.Services
                     ReleasedQuantity = form.ReleasedQuantity,
                     ReleaseConditionId = form.ReleaseConditionId.Value,
                     ReleasedAtUtc = DateTime.UtcNow,
-                    ReleasedByUserId = this._currentUser.GetActorUserId() ?? entity.Equipment.LocationId ?? 0,
+                    ReleasedByUserId = this._currentUser.GetActorUserId() ?? 0,
                     DueAtUtc = entity.ExpectedReturnAtUtc,
                     StatusId = borrowingStatus.StatusId,
                     InspectionStatusId = inspectionStatus.StatusId,
@@ -339,9 +356,53 @@ namespace ASI.Basecode.Services.Services
             }
         }
 
+        public (bool Success, string Error) Claim(long reservationId)
+        {
+            try
+            {
+                var actorId = this._currentUser.GetActorUserId();
+                var entity = this._repository.GetReservationWithDetails(reservationId);
+                if (entity == null || actorId == null)
+                {
+                    return (false, ErrorMessages.CustodianReservationNotFound);
+                }
+
+                if (entity.AssignedCustodianUserId != null || (entity.Status.Code != "PENDING" && entity.Status.Code != "APPROVED"))
+                {
+                    return (false, ErrorMessages.CustodianClaimUnavailable);
+                }
+
+                entity.AssignedCustodianUserId = actorId;
+                this._unitOfWork.SaveChanges();
+
+                this.WriteAudit("CLAIM", "Reservation", entity.ReservationId, entity.ReservationNumber,
+                    $"Claimed reservation {entity.ReservationNumber} from the shared pool.");
+
+                return (true, null);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return (false, ErrorMessages.CustodianClaimUnavailable);
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError(ex, "Failed to claim reservation {ReservationId}.", reservationId);
+                return (false, ErrorMessages.ServerError);
+            }
+        }
+
+        /// <summary>A custodian (not an admin) acting on a pooled reservation takes ownership of it.</summary>
+        private void ClaimIfPooled(Reservation entity)
+        {
+            if (entity.AssignedCustodianUserId == null && !this._currentUser.IsActorAdmin())
+            {
+                entity.AssignedCustodianUserId = this._currentUser.GetActorUserId();
+            }
+        }
+
         public ActiveBorrowingsIndexViewModel GetActiveBorrowings(string search, int page, int pageSize)
         {
-            var result = this._repository.GetActiveBorrowingsPaged(search, page, pageSize);
+            var result = this._repository.GetActiveBorrowingsPaged(search, page, pageSize, this._currentUser.GetCustodianScope());
             return new ActiveBorrowingsIndexViewModel
             {
                 Page = new PagedResult<ActiveBorrowingRowViewModel>
@@ -371,6 +432,8 @@ namespace ASI.Basecode.Services.Services
                 SubmittedAtUtc = entity.SubmittedAtUtc,
                 RequestedStartAtUtc = entity.RequestedStartAtUtc,
                 ExpectedReturnAtUtc = entity.ExpectedReturnAtUtc,
+                AssignedCustodianUserId = entity.AssignedCustodianUserId,
+                AssignedCustodianName = entity.AssignedCustodianUser == null ? null : entity.AssignedCustodianUser.FirstName + " " + entity.AssignedCustodianUser.LastName,
             };
         }
 

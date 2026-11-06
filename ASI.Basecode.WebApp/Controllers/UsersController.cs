@@ -25,6 +25,7 @@ namespace ASI.Basecode.WebApp.Controllers
     {
         private readonly IUserService _userService;
         private readonly IAuthService _authService;
+        private readonly ICustodianAssignmentService _assignments;
 
         public UsersController(
             IHttpContextAccessor httpContextAccessor,
@@ -32,11 +33,13 @@ namespace ASI.Basecode.WebApp.Controllers
             IConfiguration configuration,
             IMapper mapper,
             IUserService userService,
-            IAuthService authService)
+            IAuthService authService,
+            ICustodianAssignmentService assignments)
             : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
             this._userService = userService;
             this._authService = authService;
+            this._assignments = assignments;
         }
 
         /// <summary>
@@ -205,6 +208,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 return this.RedirectToAction(nameof(this.Index));
             }
 
+            this.ViewBag.AssignmentSummary = this._assignments.GetUserSummary(id);
             return this.View(entity);
         }
 

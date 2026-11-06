@@ -14,8 +14,12 @@ public partial class AllianceDbContext
 
     public virtual DbSet<UserPreference> UserPreferences { get; set; }
 
+    public virtual DbSet<CustodianAssignment> CustodianAssignments { get; set; }
+
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
+        ConfigureCustodianAssignments(modelBuilder);
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.Property(e => e.ContactNumber)
@@ -85,6 +89,54 @@ public partial class AllianceDbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_password_reset_tokens_users");
+        });
+    }
+
+    /// <summary>Custodian ownership table + the routed-custodian column on reservations.</summary>
+    private static void ConfigureCustodianAssignments(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CustodianAssignment>(entity =>
+        {
+            entity.HasKey(e => e.AssignmentId);
+            entity.ToTable("custodian_assignments");
+
+            entity.Property(e => e.AssignmentId).HasColumnName("assignment_id");
+            entity.Property(e => e.CustodianUserId).HasColumnName("custodian_user_id");
+            entity.Property(e => e.ScopeType).HasMaxLength(20).HasColumnName("scope_type");
+            entity.Property(e => e.BorrowerUserId).HasColumnName("borrower_user_id");
+            entity.Property(e => e.LocationId).HasColumnName("location_id");
+            entity.Property(e => e.EquipmentCategoryId).HasColumnName("equipment_category_id");
+            entity.Property(e => e.AssignedByUserId).HasColumnName("assigned_by_user_id");
+            entity.Property(e => e.AssignedAtUtc)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("assigned_at_utc");
+
+            // NO ACTION everywhere: SQL Server rejects multiple cascade paths to users.
+            entity.HasOne(d => d.CustodianUser).WithMany()
+                .HasForeignKey(d => d.CustodianUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_custodian_assignments_custodian");
+            entity.HasOne(d => d.BorrowerUser).WithMany()
+                .HasForeignKey(d => d.BorrowerUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_custodian_assignments_borrower");
+            entity.HasOne(d => d.Location).WithMany()
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_custodian_assignments_location");
+            entity.HasOne(d => d.EquipmentCategory).WithMany()
+                .HasForeignKey(d => d.EquipmentCategoryId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_custodian_assignments_category");
+        });
+
+        modelBuilder.Entity<Reservation>(entity =>
+        {
+            entity.Property(e => e.AssignedCustodianUserId).HasColumnName("assigned_custodian_user_id");
+            entity.HasOne(d => d.AssignedCustodianUser).WithMany()
+                .HasForeignKey(d => d.AssignedCustodianUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_reservations_assigned_custodian");
         });
     }
 }

@@ -99,6 +99,11 @@
     </a>
 </div>
 
+@if (ViewBag.Workload is ASI.Basecode.Services.ViewModelClasses.CustodianWorkloadViewModel workload)
+{
+    <partial name="_CustodianWorkload" model="workload" />
+}
+
 <div class="cp-section-title">Recent system activity</div>
 <div class="cp-card">
     <div class="cp-card-header" style="display:flex;justify-content:space-between;align-items:center;">

@@ -28,6 +28,7 @@ namespace ASI.Basecode.Services.Services
         private readonly IReservationRepository _reservationRepository;
         private readonly ICurrentUserService _currentUser;
         private readonly INotificationDispatcher _notifications;
+        private readonly ICustodianAssignmentService _assignments;
         private readonly IMapper _mapper;
 
         /// <summary>Direct EF access for codebook lookups and the small writes this service owns.</summary>
@@ -39,6 +40,7 @@ namespace ASI.Basecode.Services.Services
             IReservationRepository reservationRepository,
             ICurrentUserService currentUser,
             INotificationDispatcher notifications,
+            ICustodianAssignmentService assignments,
             IMapper mapper)
             : base(loggerFactory)
         {
@@ -46,6 +48,7 @@ namespace ASI.Basecode.Services.Services
             this._reservationRepository = reservationRepository;
             this._currentUser = currentUser;
             this._notifications = notifications;
+            this._assignments = assignments;
             this._mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -288,6 +291,7 @@ namespace ASI.Basecode.Services.Services
                     StatusId = pendingStatusId,
                     SubmittedAtUtc = submittedAt,
                     CompletedAtUtc = null,
+                    AssignedCustodianUserId = this._assignments.ResolveCustodian(actorUserId.Value, equipment.EquipmentId),
                 };
 
                 this.DbContext.Reservations.Add(reservation);
@@ -612,7 +616,10 @@ namespace ASI.Basecode.Services.Services
         {
             try
             {
-                var recipients = this._notifications.GetActiveUserIdsInRoles(RoleCodes.Technician, RoleCodes.Admin);
+                var recipients = reservation.AssignedCustodianUserId.HasValue
+                    ? new List<long> { reservation.AssignedCustodianUserId.Value }
+                    : this._notifications.GetActiveUserIdsInRoles(RoleCodes.Technician);
+                recipients.AddRange(this._notifications.GetActiveUserIdsInRoles(RoleCodes.Admin));
                 var borrowerName = this.DbContext.Users
                     .AsNoTracking()
                     .Where(u => u.UserId == reservation.BorrowerUserId)

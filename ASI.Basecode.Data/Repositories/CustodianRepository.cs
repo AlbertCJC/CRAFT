@@ -12,7 +12,7 @@ namespace ASI.Basecode.Data.Repositories
         {
         }
 
-        public PagedResult<Reservation> GetReservationsPaged(string search, long? statusId, int page, int pageSize)
+        public PagedResult<Reservation> GetReservationsPaged(string search, long? statusId, int page, int pageSize, long? scopeCustodianUserId = null)
         {
             const int DefaultPage = 1;
             const int DefaultPageSize = 10;
@@ -23,15 +23,24 @@ namespace ASI.Basecode.Data.Repositories
                 .Include(r => r.Equipment).ThenInclude(e => e.Location)
                 .Include(r => r.Status)
                 .Include(r => r.PickupLocation)
+                .Include(r => r.AssignedCustodianUser)
                 .AsNoTracking();
+
+            // Custodians see their routed work plus the unassigned pool; admins pass null.
+            if (scopeCustodianUserId.HasValue)
+            {
+                var custodianId = scopeCustodianUserId.Value;
+                query = query.Where(r => r.AssignedCustodianUserId == null || r.AssignedCustodianUserId == custodianId);
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var pattern = $"%{search.Trim()}%";
                 query = query.Where(r =>
-                    (r.BorrowerUser.FirstName + " " + r.BorrowerUser.LastName != null && r.BorrowerUser.FirstName.Contains(search.Trim())) ||
-                    r.Equipment.EquipmentName.Contains(search.Trim()) ||
-                    r.Equipment.AssetCode.Contains(search.Trim()));
+                    EF.Functions.Like(r.ReservationNumber, pattern) ||
+                    EF.Functions.Like(r.BorrowerUser.FirstName + " " + r.BorrowerUser.LastName, pattern) ||
+                    EF.Functions.Like(r.Equipment.EquipmentName, pattern) ||
+                    EF.Functions.Like(r.Equipment.AssetCode, pattern));
             }
 
             if (statusId.HasValue)
@@ -72,10 +81,11 @@ namespace ASI.Basecode.Data.Repositories
                 .Include(r => r.Equipment).ThenInclude(e => e.EquipmentInventoryBalance)
                 .Include(r => r.PickupLocation)
                 .Include(r => r.Status)
+                .Include(r => r.AssignedCustodianUser)
                 .FirstOrDefault(r => r.ReservationId == reservationId);
         }
 
-        public PagedResult<Borrowing> GetActiveBorrowingsPaged(string search, int page, int pageSize)
+        public PagedResult<Borrowing> GetActiveBorrowingsPaged(string search, int page, int pageSize, long? scopeCustodianUserId = null)
         {
             const int DefaultPage = 1;
             const int DefaultPageSize = 10;
@@ -88,6 +98,14 @@ namespace ASI.Basecode.Data.Repositories
                 .Include(b => b.InspectionStatus)
                 .AsNoTracking()
                 .Where(b => b.Status.Code == "ACTIVE" || b.Status.Code == "PARTIALLY_RETURNED" || b.Status.Code == "OVERDUE");
+
+            if (scopeCustodianUserId.HasValue)
+            {
+                var custodianId = scopeCustodianUserId.Value;
+                query = query.Where(b => b.Reservation == null
+                    || b.Reservation.AssignedCustodianUserId == null
+                    || b.Reservation.AssignedCustodianUserId == custodianId);
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
             {

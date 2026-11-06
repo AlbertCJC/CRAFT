@@ -45,7 +45,7 @@ namespace ASI.Basecode.Services.Services
 
         public ReturnsIndexViewModel GetReturnsIndex(string search, int page, int pageSize)
         {
-            var result = this._repository.GetReturnsPaged(search, page, pageSize);
+            var result = this._repository.GetReturnsPaged(search, page, pageSize, this._currentUser.GetCustodianScope());
             return new ReturnsIndexViewModel
             {
                 Page = new PagedResult<ReturnRowViewModel>
@@ -74,7 +74,7 @@ namespace ASI.Basecode.Services.Services
         public ReturnFormContextViewModel GetReturnFormContext(long borrowingId)
         {
             var borrowing = this._repository.GetBorrowingForReturn(borrowingId);
-            if (borrowing == null)
+            if (borrowing == null || !this._currentUser.CanActOn(borrowing.Reservation?.AssignedCustodianUserId))
             {
                 return null;
             }
@@ -130,6 +130,11 @@ namespace ASI.Basecode.Services.Services
                 if (borrowing == null)
                 {
                     return (false, ErrorMessages.ServerError, 0);
+                }
+
+                if (!this._currentUser.CanActOn(borrowing.Reservation?.AssignedCustodianUserId))
+                {
+                    return (false, ErrorMessages.CustodianNotAssigned, 0);
                 }
 
                 var alreadyReturned = borrowing.BorrowingReturns.Sum(r => r.ReturnedQuantity);
@@ -225,6 +230,11 @@ namespace ASI.Basecode.Services.Services
                 if (borrowing == null)
                 {
                     return (false, ErrorMessages.ServerError, 0);
+                }
+
+                if (!this._currentUser.CanActOn(borrowing.Reservation?.AssignedCustodianUserId))
+                {
+                    return (false, ErrorMessages.CustodianNotAssigned, 0);
                 }
 
                 var inspectionStatus = this.DbContext.InspectionStatuses.FirstOrDefault(s => s.StatusId == form.InspectionStatusId);

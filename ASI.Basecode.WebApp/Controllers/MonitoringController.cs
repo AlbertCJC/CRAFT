@@ -17,20 +17,24 @@ namespace ASI.Basecode.WebApp.Controllers
     public class MonitoringController : ControllerBase<MonitoringController>
     {
         private readonly IMonitoringService _service;
+        private readonly ICustodianAssignmentService _assignments;
 
         public MonitoringController(
             IHttpContextAccessor httpContextAccessor,
             ILoggerFactory loggerFactory,
             IConfiguration configuration,
             IMapper mapper,
-            IMonitoringService service)
+            IMonitoringService service,
+            ICustodianAssignmentService assignments)
             : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
             this._service = service;
+            this._assignments = assignments;
         }
 
         public IActionResult Dashboard()
         {
+            this.ViewBag.Workload = this._assignments.GetWorkload();
             return this.View(this._service.GetDashboard());
         }
 

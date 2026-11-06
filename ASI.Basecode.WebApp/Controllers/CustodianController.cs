@@ -80,6 +80,21 @@ namespace ASI.Basecode.WebApp.Controllers
             return this.View(model);
         }
 
+        /// <summary>
+        /// "Claim / Assign to me": takes an unassigned reservation from the shared pool.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleCodes.Technician)]
+        public IActionResult Claim(long id, string returnTo = null)
+        {
+            var (success, error) = this._custodianService.Claim(id);
+            this.TempData[success ? "SuccessMessage" : "ErrorMessage"] = success ? "Reservation assigned to you." : error;
+            return string.Equals(returnTo, "review", StringComparison.OrdinalIgnoreCase)
+                ? this.RedirectToAction(nameof(this.Review), new { id })
+                : this.RedirectToAction(nameof(this.Reservations));
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Approve(long id, string notes)

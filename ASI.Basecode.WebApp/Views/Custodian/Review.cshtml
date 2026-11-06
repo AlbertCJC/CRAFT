@@ -7,9 +7,26 @@
 <div class="cp-page-header">
     <div>
         <h1 class="cp-page-title">Reservation Review</h1>
-        <p class="cp-page-subtitle">@Model.ReservationNumber</p>
+        <p class="cp-page-subtitle">
+            @Model.ReservationNumber &middot;
+            @if (Model.AssignedCustodianName == null)
+            {
+                <span class="cp-badge cp-badge-neutral">Shared pool</span>
+            }
+            else
+            {
+                <span>Custodian: @Model.AssignedCustodianName</span>
+            }
+        </p>
     </div>
     <div class="cp-page-actions">
+        @if (Model.CanClaim && User.IsInRole("TECHNICIAN"))
+        {
+            <form method="post" asp-action="Claim" asp-route-id="@Model.ReservationId" asp-route-returnTo="review" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="cp-btn cp-btn-primary cp-btn-sm">Assign to me</button>
+            </form>
+        }
         <a asp-action="Reservations" class="cp-btn cp-btn-secondary cp-btn-sm">Back to list</a>
     </div>
 </div>

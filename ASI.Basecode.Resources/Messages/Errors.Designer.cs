@@ -428,5 +428,50 @@ namespace ASI.Basecode.Resources.Messages {
                 return ResourceManager.GetString("UserTemporaryPasswordInvalid", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This reservation is assigned to another custodian..
+        /// </summary>
+        public static string CustodianNotAssigned {
+            get {
+                return ResourceManager.GetString("CustodianNotAssigned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Only unassigned pending or approved reservations can be claimed..
+        /// </summary>
+        public static string CustodianClaimUnavailable {
+            get {
+                return ResourceManager.GetString("CustodianClaimUnavailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to That borrower, location or category already has a custodian. Remove the existing assignment first..
+        /// </summary>
+        public static string AssignmentDuplicate {
+            get {
+                return ResourceManager.GetString("AssignmentDuplicate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Choose a custodian and an item to assign..
+        /// </summary>
+        public static string AssignmentInvalid {
+            get {
+                return ResourceManager.GetString("AssignmentInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The assignment no longer exists..
+        /// </summary>
+        public static string AssignmentNotFound {
+            get {
+                return ResourceManager.GetString("AssignmentNotFound", resourceCulture);
+            }
+        }
     }
 }
