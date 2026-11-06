@@ -264,4 +264,16 @@
   <data name="InspectionAmountInvalid" xml:space="preserve">
     <value>Repair cost and penalty can't be negative.</value>
   </data>
+  <data name="AnnouncementInvalid" xml:space="preserve">
+    <value>An announcement needs a title, a message and at least one audience.</value>
+  </data>
+  <data name="TicketInvalid" xml:space="preserve">
+    <value>Choose a category and enter a subject and message.</value>
+  </data>
+  <data name="TicketNotFound" xml:space="preserve">
+    <value>That support ticket doesn't exist or isn't yours.</value>
+  </data>
+  <data name="TicketClosed" xml:space="preserve">
+    <value>This ticket is resolved. Open a new ticket if you need more help.</value>
+  </data>
 </root>

@@ -300,6 +300,16 @@ namespace ASI.Basecode.Services.Services
                     .ToList();
                 this.DbContext.CustodianAssignments.RemoveRange(assignments);
 
+                // Keep announcements and tickets; just detach them from the deleted account.
+                foreach (var a in this.DbContext.Announcements.Where(a => a.CreatedByUserId == userId))
+                {
+                    a.CreatedByUserId = null;
+                }
+                foreach (var t in this.DbContext.SupportTickets.Where(t => t.AssignedToUserId == userId))
+                {
+                    t.AssignedToUserId = null;
+                }
+
                 this.DbContext.Users.Remove(entity);
                 this._unitOfWork.SaveChanges();
 

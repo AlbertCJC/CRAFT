@@ -500,5 +500,41 @@ namespace ASI.Basecode.Resources.Messages {
                 return ResourceManager.GetString("InspectionAmountInvalid", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An announcement needs a title, a message and at least one audience..
+        /// </summary>
+        public static string AnnouncementInvalid {
+            get {
+                return ResourceManager.GetString("AnnouncementInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Choose a category and enter a subject and message..
+        /// </summary>
+        public static string TicketInvalid {
+            get {
+                return ResourceManager.GetString("TicketInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to That support ticket doesn't exist or isn't yours..
+        /// </summary>
+        public static string TicketNotFound {
+            get {
+                return ResourceManager.GetString("TicketNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This ticket is resolved. Open a new ticket if you need more help..
+        /// </summary>
+        public static string TicketClosed {
+            get {
+                return ResourceManager.GetString("TicketClosed", resourceCulture);
+            }
+        }
     }
 }

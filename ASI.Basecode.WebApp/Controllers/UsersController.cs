@@ -26,6 +26,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IUserService _userService;
         private readonly IAuthService _authService;
         private readonly ICustodianAssignmentService _assignments;
+        private readonly ICommunicationService _communication;
 
         public UsersController(
             IHttpContextAccessor httpContextAccessor,
@@ -34,12 +35,14 @@ namespace ASI.Basecode.WebApp.Controllers
             IMapper mapper,
             IUserService userService,
             IAuthService authService,
-            ICustodianAssignmentService assignments)
+            ICustodianAssignmentService assignments,
+            ICommunicationService communication)
             : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
             this._userService = userService;
             this._authService = authService;
             this._assignments = assignments;
+            this._communication = communication;
         }
 
         /// <summary>
@@ -227,6 +230,21 @@ namespace ASI.Basecode.WebApp.Controllers
             }
 
             return this.RedirectToAction(nameof(this.Index));
+        }
+
+        /// <summary>
+        /// One borrower's reservation and borrowing history (per-user drill-down).
+        /// </summary>
+        public IActionResult History(long id)
+        {
+            var model = this._communication.GetBorrowerHistory(id);
+            if (model == null)
+            {
+                this.TempData["ErrorMessage"] = ASI.Basecode.Resources.Messages.Errors.UserNotFound;
+                return this.RedirectToAction(nameof(this.Index));
+            }
+
+            return this.View(model);
         }
 
         /// <summary>

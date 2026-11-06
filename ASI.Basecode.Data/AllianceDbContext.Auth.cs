@@ -16,9 +16,16 @@ public partial class AllianceDbContext
 
     public virtual DbSet<CustodianAssignment> CustodianAssignments { get; set; }
 
+    public virtual DbSet<Announcement> Announcements { get; set; }
+
+    public virtual DbSet<SupportTicket> SupportTickets { get; set; }
+
+    public virtual DbSet<SupportTicketReply> SupportTicketReplies { get; set; }
+
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
         ConfigureCustodianAssignments(modelBuilder);
+        ConfigureCommunication(modelBuilder);
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -105,6 +112,69 @@ public partial class AllianceDbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_password_reset_tokens_users");
+        });
+    }
+
+    /// <summary>Announcements and support tickets (+ replies).</summary>
+    private static void ConfigureCommunication(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Announcement>(entity =>
+        {
+            entity.HasKey(e => e.AnnouncementId);
+            entity.ToTable("announcements");
+            entity.Property(e => e.AnnouncementId).HasColumnName("announcement_id");
+            entity.Property(e => e.Title).HasMaxLength(200).HasColumnName("title");
+            entity.Property(e => e.Body).HasMaxLength(2000).HasColumnName("body");
+            entity.Property(e => e.TargetRoles).HasMaxLength(100).HasColumnName("target_roles");
+            entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id");
+            entity.Property(e => e.CreatedAtUtc).HasDefaultValueSql("(sysutcdatetime())").HasColumnName("created_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.HasOne(d => d.CreatedByUser).WithMany()
+                .HasForeignKey(d => d.CreatedByUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_announcements_created_by");
+        });
+
+        modelBuilder.Entity<SupportTicket>(entity =>
+        {
+            entity.HasKey(e => e.TicketId);
+            entity.ToTable("support_tickets");
+            entity.Property(e => e.TicketId).HasColumnName("ticket_id");
+            entity.Property(e => e.RequesterUserId).HasColumnName("requester_user_id");
+            entity.Property(e => e.Category).HasMaxLength(20).HasColumnName("category");
+            entity.Property(e => e.Subject).HasMaxLength(200).HasColumnName("subject");
+            entity.Property(e => e.Body).HasMaxLength(4000).HasColumnName("body");
+            entity.Property(e => e.Status).HasMaxLength(20).HasColumnName("status");
+            entity.Property(e => e.AssignedToUserId).HasColumnName("assigned_to_user_id");
+            entity.Property(e => e.CreatedAtUtc).HasDefaultValueSql("(sysutcdatetime())").HasColumnName("created_at_utc");
+            entity.Property(e => e.ResolvedAtUtc).HasColumnName("resolved_at_utc");
+            entity.HasOne(d => d.RequesterUser).WithMany()
+                .HasForeignKey(d => d.RequesterUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_support_tickets_requester");
+            entity.HasOne(d => d.AssignedToUser).WithMany()
+                .HasForeignKey(d => d.AssignedToUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_support_tickets_assignee");
+        });
+
+        modelBuilder.Entity<SupportTicketReply>(entity =>
+        {
+            entity.HasKey(e => e.ReplyId);
+            entity.ToTable("support_ticket_replies");
+            entity.Property(e => e.ReplyId).HasColumnName("reply_id");
+            entity.Property(e => e.TicketId).HasColumnName("ticket_id");
+            entity.Property(e => e.AuthorUserId).HasColumnName("author_user_id");
+            entity.Property(e => e.Body).HasMaxLength(4000).HasColumnName("body");
+            entity.Property(e => e.CreatedAtUtc).HasDefaultValueSql("(sysutcdatetime())").HasColumnName("created_at_utc");
+            entity.HasOne(d => d.Ticket).WithMany(p => p.Replies)
+                .HasForeignKey(d => d.TicketId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_support_ticket_replies_ticket");
+            entity.HasOne(d => d.AuthorUser).WithMany()
+                .HasForeignKey(d => d.AuthorUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_support_ticket_replies_author");
         });
     }
 

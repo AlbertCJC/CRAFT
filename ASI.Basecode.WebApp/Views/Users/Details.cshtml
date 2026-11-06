@@ -24,6 +24,10 @@
         <p class="cp-page-subtitle">@Model.AccountIdentifier &middot; @(Model.Role?.RoleName ?? "No role")</p>
     </div>
     <div class="cp-page-actions">
+        @if (Model.Role?.IsBorrowerRole == true)
+        {
+            <a asp-action="History" asp-route-id="@Model.UserId" class="cp-btn cp-btn-secondary">History</a>
+        }
         <a asp-action="Edit" asp-route-id="@Model.UserId" class="cp-btn cp-btn-primary">Edit</a>
         <a asp-action="Index" class="cp-btn cp-btn-secondary">Back to List</a>
     </div>

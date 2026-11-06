@@ -71,6 +71,24 @@ namespace ASI.Basecode.Resources.Constants
         public const string Category = "CATEGORY";
     }
 
+    /// <summary><c>support_tickets.category</c> values.</summary>
+    public static class SupportTicketCategories
+    {
+        public const string Verification = "VERIFICATION";
+        public const string Appeal = "APPEAL";
+        public const string Feedback = "FEEDBACK";
+        public const string Other = "OTHER";
+
+        public static readonly string[] All = { Verification, Appeal, Feedback, Other };
+    }
+
+    /// <summary><c>support_tickets.status</c> values.</summary>
+    public static class SupportTicketStatuses
+    {
+        public const string Open = "OPEN";
+        public const string Resolved = "RESOLVED";
+    }
+
     /// <summary>
     /// Extra claim types issued alongside the standard ones.
     /// </summary>

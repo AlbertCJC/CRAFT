@@ -46,6 +46,7 @@ namespace ASI.Basecode.Services.Services
             this.RunSchemaStep("account lifecycle", this.EnsureAccountLifecycleSchema);
             this.RunSchemaStep("custodian assignments", this.EnsureCustodianAssignmentSchema);
             this.RunSchemaStep("reservation lifecycle", this.EnsureLifecycleSchema);
+            this.RunSchemaStep("announcements and support", this.EnsureCommunicationSchema);
 
             try
             {
@@ -93,6 +94,58 @@ IF COL_LENGTH('dbo.users', 'failed_login_count') IS NULL
 
 IF COL_LENGTH('dbo.users', 'lockout_until_utc') IS NULL
     ALTER TABLE dbo.users ADD lockout_until_utc datetime2 NULL;");
+        }
+
+        /// <summary>Announcements, support tickets and ticket replies.</summary>
+        private void EnsureCommunicationSchema()
+        {
+            this.DbContext.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'announcements')
+BEGIN
+    CREATE TABLE dbo.announcements (
+        announcement_id bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_announcements PRIMARY KEY,
+        title nvarchar(200) NOT NULL,
+        body nvarchar(2000) NOT NULL,
+        target_roles nvarchar(100) NOT NULL,
+        created_by_user_id bigint NULL,
+        created_at_utc datetime2 NOT NULL CONSTRAINT DF_announcements_created DEFAULT (sysutcdatetime()),
+        expires_at_utc datetime2 NULL,
+        CONSTRAINT FK_announcements_created_by FOREIGN KEY (created_by_user_id) REFERENCES dbo.users(user_id)
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'support_tickets')
+BEGIN
+    CREATE TABLE dbo.support_tickets (
+        ticket_id bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_support_tickets PRIMARY KEY,
+        requester_user_id bigint NOT NULL,
+        category nvarchar(20) NOT NULL,
+        subject nvarchar(200) NOT NULL,
+        body nvarchar(4000) NOT NULL,
+        status nvarchar(20) NOT NULL CONSTRAINT DF_support_tickets_status DEFAULT ('OPEN'),
+        assigned_to_user_id bigint NULL,
+        created_at_utc datetime2 NOT NULL CONSTRAINT DF_support_tickets_created DEFAULT (sysutcdatetime()),
+        resolved_at_utc datetime2 NULL,
+        CONSTRAINT FK_support_tickets_requester FOREIGN KEY (requester_user_id) REFERENCES dbo.users(user_id),
+        CONSTRAINT FK_support_tickets_assignee FOREIGN KEY (assigned_to_user_id) REFERENCES dbo.users(user_id)
+    );
+    CREATE INDEX IX_support_tickets_requester ON dbo.support_tickets(requester_user_id);
+    CREATE INDEX IX_support_tickets_status ON dbo.support_tickets(status);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'support_ticket_replies')
+BEGIN
+    CREATE TABLE dbo.support_ticket_replies (
+        reply_id bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_support_ticket_replies PRIMARY KEY,
+        ticket_id bigint NOT NULL,
+        author_user_id bigint NOT NULL,
+        body nvarchar(4000) NOT NULL,
+        created_at_utc datetime2 NOT NULL CONSTRAINT DF_support_ticket_replies_created DEFAULT (sysutcdatetime()),
+        CONSTRAINT FK_support_ticket_replies_ticket FOREIGN KEY (ticket_id) REFERENCES dbo.support_tickets(ticket_id) ON DELETE CASCADE,
+        CONSTRAINT FK_support_ticket_replies_author FOREIGN KEY (author_user_id) REFERENCES dbo.users(user_id)
+    );
+    CREATE INDEX IX_support_ticket_replies_ticket ON dbo.support_ticket_replies(ticket_id);
+END;");
         }
 
         /// <summary>Once-only reminder markers on <c>borrowings</c> for the lifecycle job.</summary>
