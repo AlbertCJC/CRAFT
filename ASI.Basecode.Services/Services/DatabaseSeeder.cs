@@ -81,7 +81,16 @@ IF COL_LENGTH('dbo.users', 'verified_at_utc') IS NULL
     ALTER TABLE dbo.users ADD verified_at_utc datetime2 NULL;
 
 IF COL_LENGTH('dbo.users', 'verified_by_user_id') IS NULL
-    ALTER TABLE dbo.users ADD verified_by_user_id bigint NULL;");
+    ALTER TABLE dbo.users ADD verified_by_user_id bigint NULL;
+
+IF COL_LENGTH('dbo.users', 'must_change_password') IS NULL
+    ALTER TABLE dbo.users ADD must_change_password bit NOT NULL CONSTRAINT DF_users_must_change_password DEFAULT (0);
+
+IF COL_LENGTH('dbo.users', 'failed_login_count') IS NULL
+    ALTER TABLE dbo.users ADD failed_login_count int NOT NULL CONSTRAINT DF_users_failed_login_count DEFAULT (0);
+
+IF COL_LENGTH('dbo.users', 'lockout_until_utc') IS NULL
+    ALTER TABLE dbo.users ADD lockout_until_utc datetime2 NULL;");
         }
 
         /// <summary>

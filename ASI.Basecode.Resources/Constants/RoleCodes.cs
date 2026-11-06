@@ -70,5 +70,8 @@ namespace ASI.Basecode.Resources.Constants
         public const string AccountIdentifier = "cp:account_identifier";
         public const string IsBorrower = "cp:is_borrower";
         public const string Department = "cp:department";
+
+        /// <summary>"1" while the account still uses an admin-issued temporary password.</summary>
+        public const string MustChangePassword = "cp:must_change_password";
     }
 }

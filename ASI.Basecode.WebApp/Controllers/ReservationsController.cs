@@ -82,6 +82,7 @@ namespace ASI.Basecode.WebApp.Controllers
         /// <summary>
         /// Reservation form (Figma: B - Reservation Form) for one piece of equipment.
         /// </summary>
+        [Authorize(Roles = RoleCodes.Borrower)]
         public IActionResult New(long id)
         {
             var context = this._reservationService.GetReservationFormViewModel(id);
@@ -95,6 +96,7 @@ namespace ASI.Basecode.WebApp.Controllers
             return this.View(context);
         }
 
+        [Authorize(Roles = RoleCodes.Borrower)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult New(ReservationFormViewModel form)
@@ -127,6 +129,7 @@ namespace ASI.Basecode.WebApp.Controllers
         /// <summary>
         /// The acting borrower's own reservations (Figma: B - My Reservations).
         /// </summary>
+        [Authorize(Roles = RoleCodes.Borrower)]
         public IActionResult Mine(string search)
         {
             var model = this._reservationService.GetMineViewModel();
@@ -162,6 +165,7 @@ namespace ASI.Basecode.WebApp.Controllers
         /// <summary>
         /// Cancels the borrower's own PENDING/APPROVED reservation.
         /// </summary>
+        [Authorize(Roles = RoleCodes.Borrower)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Cancel(long id)

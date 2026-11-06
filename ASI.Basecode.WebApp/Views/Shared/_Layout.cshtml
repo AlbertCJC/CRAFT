@@ -200,8 +200,9 @@
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script>
     (function() {
-        var success = '@Html.Raw(TempData["SuccessMessage"]?.ToString()?.Replace("'", "\\'") ?? "")';
-        var error = '@Html.Raw(TempData["ErrorMessage"]?.ToString()?.Replace("'", "\\'") ?? "")';
+        @* JSON-encode so names/reasons inside messages can't break out of the script. *@
+        var success = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["SuccessMessage"]?.ToString() ?? ""));
+        var error = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ErrorMessage"]?.ToString() ?? ""));
         var container = document.getElementById('cp-toast-container');
         function toast(msg, cls) {
             if (!msg) return;

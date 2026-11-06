@@ -3,6 +3,7 @@ using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Resources.Constants;
 using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.Manager;
 using ASI.Basecode.Services.ViewModelClasses;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -15,18 +16,12 @@ using ErrorMessages = ASI.Basecode.Resources.Messages.Errors;
 namespace ASI.Basecode.Services.Services
 {
     /// <summary>
-    /// User management service: validation, uniqueness rules and audit logging.
+    /// User management service: validation, uniqueness rules, staff provisioning (temporary
+    /// passwords), last-admin / self-edit guards and audit logging.
     /// Data access stays in the repository; this layer owns the business rules.
-    /// Password handling is intentionally out of scope (web auth stripped).
     /// </summary>
     public class UserService : ServiceBase, IUserService
     {
-        /// <summary>
-        /// Placeholder stored for the NOT NULL password_hash column until web auth returns.
-        /// No authentication ever accepts this value.
-        /// </summary>
-        private const string PlaceholderPasswordHash = "#auth-stripped-placeholder#";
-
         private readonly IUnitOfWork _unitOfWork;
         private readonly IUserRepository _userRepository;
         private readonly ICurrentUserService _currentUser;
@@ -284,6 +279,16 @@ namespace ASI.Basecode.Services.Services
                     return (false, ErrorMessages.UserNotFound);
                 }
 
+                if (entity.UserId == this._currentUser.GetActorUserId())
+                {
+                    return (false, ErrorMessages.UserSelfDeleteBlocked);
+                }
+
+                if (this.IsActiveAdmin(entity.RoleId, entity.AccountStatusId) && !this.OtherActiveAdminExists(entity.UserId))
+                {
+                    return (false, ErrorMessages.UserLastAdminBlocked);
+                }
+
                 if (this._userRepository.HasTransactionReferences(userId))
                 {
                     return (false, ErrorMessages.UserDeleteBlocked);
@@ -345,19 +350,63 @@ namespace ASI.Basecode.Services.Services
                 .ToList();
         }
 
+        public (bool Success, string Error, string TemporaryPassword) ResetPassword(long userId)
+        {
+            try
+            {
+                var entity = this._userRepository.GetTrackedById(userId);
+                if (entity == null)
+                {
+                    return (false, ErrorMessages.UserNotFound, null);
+                }
+
+                var temporary = PasswordManager.GenerateTemporaryPassword();
+                entity.PasswordHash = PasswordManager.Hash(temporary);
+                entity.MustChangePassword = true;
+                entity.FailedLoginCount = 0;
+                entity.LockoutUntilUtc = null;
+                this._unitOfWork.SaveChanges();
+
+                this.WriteAudit("PASSWORD_RESET", "User", entity.UserId, entity.AccountIdentifier,
+                    $"Administrator issued a temporary password for '{entity.FirstName} {entity.LastName}' ({entity.AccountIdentifier}).");
+
+                this._notifications.Notify(entity.UserId, NotificationTypes.Account,
+                    "Password reset by administrator",
+                    "An administrator reset your password. Sign in with the temporary password they gave you and choose a new one.");
+
+                return (true, null, temporary);
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError(ex, "Failed to reset password for user {UserId}.", userId);
+                return (false, ErrorMessages.ServerError, null);
+            }
+        }
+
         private (bool Success, string Error, long UserId) Create(UserFormViewModel form)
         {
+            var temporary = string.IsNullOrWhiteSpace(form.TemporaryPassword)
+                ? PasswordManager.GenerateTemporaryPassword()
+                : form.TemporaryPassword;
+            if (!PasswordManager.MeetsPolicy(temporary))
+            {
+                return (false, ErrorMessages.UserTemporaryPasswordInvalid, 0);
+            }
+
             var entity = this._mapper.Map<User>(form);
             entity.UserId = 0; // ignore any posted id on create
             entity.CreatedAtUtc = default; // let the DB default (sysutcdatetime) fill it
-            entity.PasswordHash = PlaceholderPasswordHash; // auth stripped — never a valid credential
+            entity.PasswordHash = PasswordManager.Hash(temporary);
+            entity.MustChangePassword = true;
 
             this.DbContext.Users.Add(entity);
             this._unitOfWork.SaveChanges();
 
             this.WriteAudit("CREATE", "User", entity.UserId, entity.AccountIdentifier,
-                $"Created user account '{entity.FirstName} {entity.LastName}' ({entity.AccountIdentifier}).");
+                $"Created user account '{entity.FirstName} {entity.LastName}' ({entity.AccountIdentifier}) with a temporary password.");
 
+            form.TemporaryPassword = null;
+            form.IssuedTemporaryPassword = temporary;
             return (true, null, entity.UserId);
         }
 
@@ -369,6 +418,20 @@ namespace ASI.Basecode.Services.Services
                 return (false, ErrorMessages.UserNotFound, form.UserId);
             }
 
+            var roleOrStatusChanged = form.RoleId != entity.RoleId || form.AccountStatusId != entity.AccountStatusId;
+            if (roleOrStatusChanged && entity.UserId == this._currentUser.GetActorUserId())
+            {
+                return (false, ErrorMessages.UserSelfChangeBlocked, form.UserId);
+            }
+
+            if (roleOrStatusChanged
+                && this.IsActiveAdmin(entity.RoleId, entity.AccountStatusId)
+                && !this.IsActiveAdmin(form.RoleId ?? 0, form.AccountStatusId ?? 0)
+                && !this.OtherActiveAdminExists(entity.UserId))
+            {
+                return (false, ErrorMessages.UserLastAdminBlocked, form.UserId);
+            }
+
             this._mapper.Map(form, entity);
             entity.UserId = form.UserId;
 
@@ -378,6 +441,19 @@ namespace ASI.Basecode.Services.Services
                 $"Updated user account '{entity.FirstName} {entity.LastName}' ({entity.AccountIdentifier}).");
 
             return (true, null, entity.UserId);
+        }
+
+        private bool IsActiveAdmin(long roleId, long accountStatusId)
+        {
+            return this.DbContext.Roles.Any(r => r.RoleId == roleId && r.RoleCode == RoleCodes.Admin)
+                && this.DbContext.AccountStatuses.Any(s => s.AccountStatusId == accountStatusId && s.Code == AccountStatusCodes.Active);
+        }
+
+        private bool OtherActiveAdminExists(long excludeUserId)
+        {
+            return this.DbContext.Users.Any(u => u.UserId != excludeUserId
+                && u.Role.RoleCode == RoleCodes.Admin
+                && u.AccountStatus.Code == AccountStatusCodes.Active);
         }
 
         private void WriteAudit(string actionType, string entityType, long entityId, string referenceNumber, string details)

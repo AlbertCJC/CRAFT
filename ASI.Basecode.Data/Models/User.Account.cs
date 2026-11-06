@@ -14,4 +14,13 @@ public partial class User
     public DateTime? VerifiedAtUtc { get; set; }
 
     public long? VerifiedByUserId { get; set; }
+
+    /// <summary>Set for admin-provisioned or admin-reset passwords; cleared on the first password change.</summary>
+    public bool MustChangePassword { get; set; }
+
+    /// <summary>Consecutive failed sign-ins since the last success or lockout.</summary>
+    public int FailedLoginCount { get; set; }
+
+    /// <summary>Sign-in is refused until this instant after too many failed attempts.</summary>
+    public DateTime? LockoutUntilUtc { get; set; }
 }

@@ -392,5 +392,41 @@ namespace ASI.Basecode.Resources.Messages {
                 return ResourceManager.GetString("VerificationReasonRequired", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You can't change your own role or account status. Ask another administrator..
+        /// </summary>
+        public static string UserSelfChangeBlocked {
+            get {
+                return ResourceManager.GetString("UserSelfChangeBlocked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You can't delete your own account..
+        /// </summary>
+        public static string UserSelfDeleteBlocked {
+            get {
+                return ResourceManager.GetString("UserSelfDeleteBlocked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This is the last active administrator. Promote or activate another administrator first..
+        /// </summary>
+        public static string UserLastAdminBlocked {
+            get {
+                return ResourceManager.GetString("UserLastAdminBlocked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Temporary password must be at least 8 characters with 1 uppercase letter and 1 number..
+        /// </summary>
+        public static string UserTemporaryPasswordInvalid {
+            get {
+                return ResourceManager.GetString("UserTemporaryPasswordInvalid", resourceCulture);
+            }
+        }
     }
 }

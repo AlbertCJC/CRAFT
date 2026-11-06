@@ -91,6 +91,18 @@ namespace ASI.Basecode.Services.ViewModelClasses
         [Display(Name = "Account Status")]
         [Required(ErrorMessage = "Account status is required.")]
         public long? AccountStatusId { get; set; }
+
+        /// <summary>
+        /// Create only: optional admin-chosen temporary password. Left blank, a strong one is generated.
+        /// The user must replace it at first sign-in.
+        /// </summary>
+        [Display(Name = "Temporary Password")]
+        [DataType(DataType.Password)]
+        [StringLength(100, ErrorMessage = "Temporary password must be at most 100 characters long.")]
+        public string TemporaryPassword { get; set; }
+
+        /// <summary>Output: the temporary password actually issued on create (shown to the admin once).</summary>
+        public string IssuedTemporaryPassword { get; set; }
     }
 
     /// <summary>

@@ -29,6 +29,9 @@ public partial class AllianceDbContext
                 .HasColumnName("verification_note");
             entity.Property(e => e.VerifiedAtUtc).HasColumnName("verified_at_utc");
             entity.Property(e => e.VerifiedByUserId).HasColumnName("verified_by_user_id");
+            entity.Property(e => e.MustChangePassword).HasColumnName("must_change_password");
+            entity.Property(e => e.FailedLoginCount).HasColumnName("failed_login_count");
+            entity.Property(e => e.LockoutUntilUtc).HasColumnName("lockout_until_utc");
         });
 
         modelBuilder.Entity<Equipment>(entity =>

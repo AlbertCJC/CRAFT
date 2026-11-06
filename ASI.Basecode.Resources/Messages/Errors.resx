@@ -228,4 +228,16 @@
   <data name="VerificationReasonRequired" xml:space="preserve">
     <value>A rejection reason is required.</value>
   </data>
+  <data name="UserSelfChangeBlocked" xml:space="preserve">
+    <value>You can't change your own role or account status. Ask another administrator.</value>
+  </data>
+  <data name="UserSelfDeleteBlocked" xml:space="preserve">
+    <value>You can't delete your own account.</value>
+  </data>
+  <data name="UserLastAdminBlocked" xml:space="preserve">
+    <value>This is the last active administrator. Promote or activate another administrator first.</value>
+  </data>
+  <data name="UserTemporaryPasswordInvalid" xml:space="preserve">
+    <value>Temporary password must be at least 8 characters with 1 uppercase letter and 1 number.</value>
+  </data>
 </root>

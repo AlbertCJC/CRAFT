@@ -76,5 +76,11 @@ namespace ASI.Basecode.Services.Interfaces
         /// Rejects an UNVERIFIED account with a required reason, audits REJECT and notifies the borrower.
         /// </summary>
         (bool Success, string Error) RejectVerification(long userId, string reason);
+
+        /// <summary>
+        /// Issues a new temporary password (must be changed at next sign-in), clears any lockout,
+        /// and audits PASSWORD_RESET. Returns the plain temporary password to show the admin once.
+        /// </summary>
+        (bool Success, string Error, string TemporaryPassword) ResetPassword(long userId);
     }
 }
