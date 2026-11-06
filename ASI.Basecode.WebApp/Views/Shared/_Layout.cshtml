@@ -48,9 +48,7 @@
             </div>
         </div>
         <div class="craft-header-right">
-            <a class="icon-btn" href="/Notifications" title="Notifications">
-                <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9z"/><path d="M10 21a2 2 0 004 0"/></svg>
-            </a>
+            @await Component.InvokeAsync("NotificationBadge")
             <a class="user" href="/Profile" title="Profile &amp; Settings">
                 <div class="uinfo" style="align-items:flex-end">
                     <div class="uname">@displayName</div>

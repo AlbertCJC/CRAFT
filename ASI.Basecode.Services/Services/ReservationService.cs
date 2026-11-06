@@ -1,6 +1,7 @@
 using ASI.Basecode.Data;
 using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
+using ASI.Basecode.Resources.Constants;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using AutoMapper;
@@ -26,6 +27,7 @@ namespace ASI.Basecode.Services.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IReservationRepository _reservationRepository;
         private readonly ICurrentUserService _currentUser;
+        private readonly INotificationDispatcher _notifications;
         private readonly IMapper _mapper;
 
         /// <summary>Direct EF access for codebook lookups and the small writes this service owns.</summary>
@@ -36,12 +38,14 @@ namespace ASI.Basecode.Services.Services
             IUnitOfWork unitOfWork,
             IReservationRepository reservationRepository,
             ICurrentUserService currentUser,
+            INotificationDispatcher notifications,
             IMapper mapper)
             : base(loggerFactory)
         {
             this._unitOfWork = unitOfWork;
             this._reservationRepository = reservationRepository;
             this._currentUser = currentUser;
+            this._notifications = notifications;
             this._mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -301,6 +305,8 @@ namespace ASI.Basecode.Services.Services
                 this.WriteAudit("CREATE", "Reservation", reservation.ReservationId, reservation.ReservationNumber,
                     $"Submitted reservation {reservation.ReservationNumber} for '{equipment.EquipmentName}' " +
                     $"({form.Quantity} unit(s), start {requestedStart:yyyy-MM-dd HH:mm} UTC) as PENDING.{notesSuffix}");
+
+                this.NotifyStaffOfSubmission(reservation, equipment.EquipmentName);
 
                 return (true, null, reservation.ReservationId);
             }
@@ -596,6 +602,31 @@ namespace ASI.Basecode.Services.Services
                 - (entity.EquipmentInventoryBalance?.MaintenanceQuantity ?? 0)
                 - (entity.EquipmentInventoryBalance?.UnreconciledQuantity ?? 0);
             return row;
+        }
+
+        /// <summary>
+        /// Tells staff a new request is waiting: the routed custodian when one is assigned,
+        /// otherwise every custodian (shared pool), plus administrators.
+        /// </summary>
+        private void NotifyStaffOfSubmission(Reservation reservation, string equipmentName)
+        {
+            try
+            {
+                var recipients = this._notifications.GetActiveUserIdsInRoles(RoleCodes.Technician, RoleCodes.Admin);
+                var borrowerName = this.DbContext.Users
+                    .AsNoTracking()
+                    .Where(u => u.UserId == reservation.BorrowerUserId)
+                    .Select(u => u.FirstName + " " + u.LastName)
+                    .FirstOrDefault();
+                this._notifications.Notify(recipients, NotificationTypes.Reservation,
+                    $"New reservation {reservation.ReservationNumber}",
+                    $"{borrowerName} requested {reservation.RequestedQuantity} unit(s) of {equipmentName} starting {reservation.RequestedStartAtUtc:dd MMM yyyy}. Review it in the custodian console.");
+            }
+            catch (Exception ex)
+            {
+                // The reservation is already saved; a failed alert must not undo it.
+                this._logger.LogWarning(ex, "Failed to notify staff about reservation {ReservationId}.", reservation.ReservationId);
+            }
         }
 
         private void WriteAudit(string actionType, string entityType, long entityId, string referenceNumber, string details)

@@ -99,6 +99,11 @@ namespace ASI.Basecode.Services.Services
                 .ToList();
         }
 
+        public int GetUnreadCount(long userId)
+        {
+            return this.DbContext.Notifications.Count(n => n.RecipientUserId == userId && !n.IsRead);
+        }
+
         /// <summary>Missing preference rows mean "all on" (the seeder backfills defaults).</summary>
         private static bool Allows(UserPreference preference, string notificationType)
         {

@@ -1,6 +1,7 @@
 using ASI.Basecode.Data;
 using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
+using ASI.Basecode.Resources.Constants;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using AutoMapper;
@@ -18,6 +19,7 @@ namespace ASI.Basecode.Services.Services
         private readonly ICustodianRepository _repository;
         private readonly IReservationRepository _reservationRepository;
         private readonly ICurrentUserService _currentUser;
+        private readonly INotificationDispatcher _notifications;
         private readonly IMapper _mapper;
 
         private AllianceDbContext DbContext => (AllianceDbContext)_unitOfWork.Database;
@@ -28,6 +30,7 @@ namespace ASI.Basecode.Services.Services
             ICustodianRepository repository,
             IReservationRepository reservationRepository,
             ICurrentUserService currentUser,
+            INotificationDispatcher notifications,
             IMapper mapper)
             : base(loggerFactory)
         {
@@ -35,6 +38,7 @@ namespace ASI.Basecode.Services.Services
             this._repository = repository;
             this._reservationRepository = reservationRepository;
             this._currentUser = currentUser;
+            this._notifications = notifications;
             this._mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -324,6 +328,8 @@ namespace ASI.Basecode.Services.Services
                     $"Released {form.ReleasedQuantity} unit(s) of {entity.Equipment.AssetCode} under {txn} for reservation {entity.ReservationNumber}." +
                     (string.IsNullOrWhiteSpace(form.ReleaseNotes) ? string.Empty : " Notes: " + form.ReleaseNotes.Trim()));
 
+                this.NotifyIfLowStock(entity.Equipment);
+
                 return (true, null, borrowing.BorrowingId);
             }
             catch (Exception ex)
@@ -393,16 +399,39 @@ namespace ASI.Basecode.Services.Services
 
         private void WriteNotification(long recipientUserId, string title, string message)
         {
-            this.DbContext.Notifications.Add(new Notification
+            this._notifications.Notify(recipientUserId, NotificationTypes.Reservation, title, message);
+        }
+
+        /// <summary>
+        /// Alerts custodians and admins when a release leaves the item at or below the policy's
+        /// low-stock threshold.
+        /// </summary>
+        private void NotifyIfLowStock(Equipment equipment)
+        {
+            var balance = equipment?.EquipmentInventoryBalance;
+            if (balance == null)
             {
-                RecipientUserId = recipientUserId,
-                NotificationType = "RESERVATION",
-                Title = title,
-                Message = message,
-                IsRead = false,
-                CreatedAtUtc = DateTime.UtcNow,
-            });
-            this._unitOfWork.SaveChanges();
+                return;
+            }
+
+            var available = balance.TotalQuantity - balance.ReservedQuantity - balance.ReleasedQuantity
+                - balance.AwaitingInspectionQuantity - balance.MaintenanceQuantity - balance.UnreconciledQuantity;
+            var threshold = this.DbContext.BorrowingPolicyVersions
+                .AsNoTracking()
+                .Where(p => p.IsCurrent)
+                .Select(p => (int?)p.LowStockThreshold)
+                .FirstOrDefault() ?? 2;
+
+            if (available > threshold)
+            {
+                return;
+            }
+
+            this._notifications.Notify(
+                this._notifications.GetActiveUserIdsInRoles(RoleCodes.Technician, RoleCodes.Admin),
+                NotificationTypes.Alert,
+                $"Low stock: {equipment.EquipmentName}",
+                $"{equipment.EquipmentName} ({equipment.AssetCode}) has {Math.Max(0, available)} unit(s) available, at or below the low-stock threshold of {threshold}.");
         }
 
         private void WriteAudit(string actionType, string entityType, long entityId, string referenceNumber, string details)

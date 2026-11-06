@@ -1,6 +1,7 @@
 using ASI.Basecode.Data;
 using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
+using ASI.Basecode.Resources.Constants;
 using ASI.Basecode.Data.Repositories;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
@@ -21,6 +22,7 @@ namespace ASI.Basecode.Services.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IReturnProcessingRepository _repository;
         private readonly ICurrentUserService _currentUser;
+        private readonly INotificationDispatcher _notifications;
         private readonly IMapper _mapper;
 
         private AllianceDbContext DbContext => (AllianceDbContext)_unitOfWork.Database;
@@ -30,12 +32,14 @@ namespace ASI.Basecode.Services.Services
             IUnitOfWork unitOfWork,
             IReturnProcessingRepository repository,
             ICurrentUserService currentUser,
+            INotificationDispatcher notifications,
             IMapper mapper)
             : base(loggerFactory)
         {
             this._unitOfWork = unitOfWork;
             this._repository = repository;
             this._currentUser = currentUser;
+            this._notifications = notifications;
             this._mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -301,16 +305,7 @@ namespace ASI.Basecode.Services.Services
 
         private void WriteNotification(long recipientUserId, string title, string message)
         {
-            this.DbContext.Notifications.Add(new Notification
-            {
-                RecipientUserId = recipientUserId,
-                NotificationType = "RETURN",
-                Title = title,
-                Message = message,
-                IsRead = false,
-                CreatedAtUtc = DateTime.UtcNow,
-            });
-            this._unitOfWork.SaveChanges();
+            this._notifications.Notify(recipientUserId, NotificationTypes.Return, title, message);
         }
 
         private void WriteAudit(string actionType, string entityType, long entityId, string referenceNumber, string details)

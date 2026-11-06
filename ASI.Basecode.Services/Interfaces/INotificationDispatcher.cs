@@ -19,5 +19,8 @@ namespace ASI.Basecode.Services.Interfaces
 
         /// <summary>Active accounts holding any of the given role codes.</summary>
         List<long> GetActiveUserIdsInRoles(params string[] roleCodes);
+
+        /// <summary>Unread notifications for the header badge.</summary>
+        int GetUnreadCount(long userId);
     }
 }
