@@ -122,9 +122,13 @@
                     <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
                     <div>Dashboard</div>
                 </a>
-                <a class="nav-item @(controller == "Users" ? "active" : "")" href="/Users">
+                <a class="nav-item @(controller == "Users" && action != "Verifications" ? "active" : "")" href="/Users">
                     <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 21a7 7 0 0114 0"/><path d="M17 5a4 4 0 010 7"/><path d="M19 21a6 6 0 00-3-5"/></svg>
                     <div>User Management</div>
+                </a>
+                <a class="nav-item @(controller == "Users" && action == "Verifications" ? "active" : "")" href="/Users/Verifications">
+                    <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 21a7 7 0 0114 0"/><path d="M16 11l2 2 4-4"/></svg>
+                    <div>Verifications</div>
                 </a>
                 <a class="nav-item @(controller == "Equipment" ? "active" : "")" href="/Equipment">
                     <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>

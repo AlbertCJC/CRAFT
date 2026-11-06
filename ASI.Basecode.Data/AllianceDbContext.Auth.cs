@@ -24,6 +24,11 @@ public partial class AllianceDbContext
             entity.Property(e => e.AlternateContact)
                 .HasMaxLength(100)
                 .HasColumnName("alternate_contact");
+            entity.Property(e => e.VerificationNote)
+                .HasMaxLength(500)
+                .HasColumnName("verification_note");
+            entity.Property(e => e.VerifiedAtUtc).HasColumnName("verified_at_utc");
+            entity.Property(e => e.VerifiedByUserId).HasColumnName("verified_by_user_id");
         });
 
         modelBuilder.Entity<Equipment>(entity =>

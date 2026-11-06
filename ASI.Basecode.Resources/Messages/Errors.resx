@@ -222,4 +222,10 @@
   <data name="CustodianRejectReasonRequired" xml:space="preserve">
     <value>A rejection reason is required.</value>
   </data>
+  <data name="VerificationNotPending" xml:space="preserve">
+    <value>This account is not awaiting verification.</value>
+  </data>
+  <data name="VerificationReasonRequired" xml:space="preserve">
+    <value>A rejection reason is required.</value>
+  </data>
 </root>

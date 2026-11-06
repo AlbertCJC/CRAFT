@@ -215,6 +215,11 @@ namespace ASI.Basecode.Services.Services
                     return (false, "Your account is still pending verification.", form.EquipmentId);
                 }
 
+                if (string.Equals(borrower.AccountStatus?.Code, "REJECTED", StringComparison.OrdinalIgnoreCase))
+                {
+                    return (false, "Your account verification was rejected. Submit an appeal from your dashboard.", form.EquipmentId);
+                }
+
                 var isFaculty = string.Equals(borrower.Role?.RoleCode, "FACULTY", StringComparison.OrdinalIgnoreCase);
                 var maxBorrowDays = isFaculty ? policy.FacultyMaxBorrowDays : policy.MaxBorrowDays;
                 var durationDays = (expectedReturn - requestedStart).TotalDays;

@@ -79,6 +79,7 @@ namespace ASI.Basecode.Services.Services
                 DisplayName = user == null ? "Borrower" : $"{user.FirstName} {user.LastName}".Trim(),
                 FirstName = user?.FirstName,
                 AccountStatus = user?.AccountStatus?.Code,
+                VerificationNote = user?.VerificationNote,
 
                 ActiveBorrowings = openBorrowings.Count,
                 PendingReservations = reservations.Count(r => r.Status.Code == "PENDING"),

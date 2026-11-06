@@ -374,5 +374,23 @@ namespace ASI.Basecode.Resources.Messages {
                 return ResourceManager.GetString("CustodianRejectReasonRequired", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This account is not awaiting verification..
+        /// </summary>
+        public static string VerificationNotPending {
+            get {
+                return ResourceManager.GetString("VerificationNotPending", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A rejection reason is required..
+        /// </summary>
+        public static string VerificationReasonRequired {
+            get {
+                return ResourceManager.GetString("VerificationReasonRequired", resourceCulture);
+            }
+        }
     }
 }

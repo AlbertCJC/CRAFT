@@ -144,6 +144,7 @@ namespace ASI.Basecode.Data.Repositories
                 Students = this.Context.Users.Count(u => u.Role.RoleCode == "STUDENT"),
                 Faculty = this.Context.Users.Count(u => u.Role.RoleCode == "FACULTY"),
                 CustodianAdmins = this.Context.Users.Count(u => u.Role.RoleCode == "TECHNICIAN" || u.Role.RoleCode == "ADMIN"),
+                Unverified = this.Context.Users.Count(u => u.AccountStatus.Code == "UNVERIFIED"),
             };
         }
 

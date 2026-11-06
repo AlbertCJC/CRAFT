@@ -24,10 +24,32 @@ namespace ASI.Basecode.Services.ViewModelClasses
 
         public string DepartmentName { get; set; }
 
-        /// <summary>Account status code: ACTIVE / INACTIVE / SUSPENDED / LOCKED.</summary>
+        /// <summary>Account status code: ACTIVE / UNVERIFIED / REJECTED / INACTIVE / SUSPENDED / LOCKED.</summary>
         public string AccountStatusCode { get; set; }
 
         public string AccountStatusDescription { get; set; }
+
+        public System.DateTime CreatedAtUtc { get; set; }
+
+        /// <summary>Rejection reason recorded by the verification queue.</summary>
+        public string VerificationNote { get; set; }
+    }
+
+    /// <summary>
+    /// Pending Verifications queue (UNVERIFIED accounts) with a Rejected tab.
+    /// </summary>
+    public class VerificationQueueViewModel
+    {
+        public PagedResult<UserListViewModel> Page { get; set; }
+
+        /// <summary>"pending" (UNVERIFIED) or "rejected" (REJECTED).</summary>
+        public string Tab { get; set; }
+
+        public string Search { get; set; }
+
+        public int PendingCount { get; set; }
+
+        public int RejectedCount { get; set; }
     }
 
     /// <summary>

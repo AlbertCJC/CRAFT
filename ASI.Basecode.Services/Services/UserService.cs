@@ -1,6 +1,7 @@
 using ASI.Basecode.Data;
 using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
+using ASI.Basecode.Resources.Constants;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ViewModelClasses;
 using AutoMapper;
@@ -29,6 +30,7 @@ namespace ASI.Basecode.Services.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IUserRepository _userRepository;
         private readonly ICurrentUserService _currentUser;
+        private readonly INotificationDispatcher _notifications;
         private readonly IMapper _mapper;
 
         /// <summary>Direct EF access for the small writes this service owns.</summary>
@@ -39,13 +41,152 @@ namespace ASI.Basecode.Services.Services
             IUnitOfWork unitOfWork,
             IUserRepository userRepository,
             ICurrentUserService currentUser,
+            INotificationDispatcher notifications,
             IMapper mapper)
             : base(loggerFactory)
         {
             this._unitOfWork = unitOfWork;
             this._userRepository = userRepository;
             this._currentUser = currentUser;
+            this._notifications = notifications;
             this._mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        }
+
+        public VerificationQueueViewModel GetVerificationQueue(string tab, string search, int page, int pageSize)
+        {
+            var rejectedTab = string.Equals(tab, "rejected", StringComparison.OrdinalIgnoreCase);
+            var statusCode = rejectedTab ? AccountStatusCodes.Rejected : AccountStatusCodes.Unverified;
+            var statusIds = this.DbContext.AccountStatuses
+                .AsNoTracking()
+                .ToDictionary(s => s.Code, s => s.AccountStatusId);
+
+            var result = statusIds.TryGetValue(statusCode, out var statusId)
+                ? this._userRepository.GetPaged(search, null, null, statusId, page, pageSize)
+                : new PagedResult<User> { Page = 1, PageSize = pageSize };
+
+            int CountOf(string code) => statusIds.TryGetValue(code, out var id)
+                ? this.DbContext.Users.Count(u => u.AccountStatusId == id)
+                : 0;
+
+            return new VerificationQueueViewModel
+            {
+                Page = new PagedResult<UserListViewModel>
+                {
+                    Items = result.Items.Select(entity => this._mapper.Map<UserListViewModel>(entity)).ToList(),
+                    Page = result.Page,
+                    PageSize = result.PageSize,
+                    TotalCount = result.TotalCount,
+                },
+                Tab = rejectedTab ? "rejected" : "pending",
+                Search = search,
+                PendingCount = CountOf(AccountStatusCodes.Unverified),
+                RejectedCount = CountOf(AccountStatusCodes.Rejected),
+            };
+        }
+
+        public (bool Success, string Error) Verify(long userId)
+        {
+            try
+            {
+                var entity = this.DbContext.Users
+                    .Include(u => u.AccountStatus)
+                    .FirstOrDefault(u => u.UserId == userId);
+                if (entity == null)
+                {
+                    return (false, ErrorMessages.UserNotFound);
+                }
+
+                var code = entity.AccountStatus?.Code;
+                if (code != AccountStatusCodes.Unverified && code != AccountStatusCodes.Rejected)
+                {
+                    return (false, ErrorMessages.VerificationNotPending);
+                }
+
+                var active = this.DbContext.AccountStatuses.First(s => s.Code == AccountStatusCodes.Active);
+                entity.AccountStatusId = active.AccountStatusId;
+                entity.VerificationNote = null;
+                entity.VerifiedAtUtc = DateTime.UtcNow;
+                entity.VerifiedByUserId = this._currentUser.GetActorUserId();
+                this._unitOfWork.SaveChanges();
+
+                this.WriteAudit("VERIFY", "User", entity.UserId, entity.AccountIdentifier,
+                    $"Verified account '{entity.FirstName} {entity.LastName}' ({entity.AccountIdentifier}).");
+
+                this._notifications.Notify(entity.UserId, NotificationTypes.Account,
+                    "Account verified",
+                    "Your account has been verified. You can now submit equipment reservations.");
+
+                return (true, null);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return (false, ErrorMessages.UserUpdateConflict);
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError(ex, "Failed to verify user {UserId}.", userId);
+                return (false, ErrorMessages.ServerError);
+            }
+        }
+
+        public (bool Success, string Error) RejectVerification(long userId, string reason)
+        {
+            try
+            {
+                reason = reason?.Trim();
+                if (string.IsNullOrWhiteSpace(reason))
+                {
+                    return (false, ErrorMessages.VerificationReasonRequired);
+                }
+
+                if (reason.Length > 500)
+                {
+                    reason = reason.Substring(0, 500);
+                }
+
+                var entity = this.DbContext.Users
+                    .Include(u => u.AccountStatus)
+                    .FirstOrDefault(u => u.UserId == userId);
+                if (entity == null)
+                {
+                    return (false, ErrorMessages.UserNotFound);
+                }
+
+                if (entity.AccountStatus?.Code != AccountStatusCodes.Unverified)
+                {
+                    return (false, ErrorMessages.VerificationNotPending);
+                }
+
+                var rejected = this.DbContext.AccountStatuses.FirstOrDefault(s => s.Code == AccountStatusCodes.Rejected);
+                if (rejected == null)
+                {
+                    return (false, ErrorMessages.ServerError);
+                }
+
+                entity.AccountStatusId = rejected.AccountStatusId;
+                entity.VerificationNote = reason;
+                entity.VerifiedAtUtc = DateTime.UtcNow;
+                entity.VerifiedByUserId = this._currentUser.GetActorUserId();
+                this._unitOfWork.SaveChanges();
+
+                this.WriteAudit("REJECT", "User", entity.UserId, entity.AccountIdentifier,
+                    $"Rejected verification for '{entity.FirstName} {entity.LastName}' ({entity.AccountIdentifier}). Reason: {reason}");
+
+                this._notifications.Notify(entity.UserId, NotificationTypes.Account,
+                    "Account verification rejected",
+                    $"Your account could not be verified: {reason} You can submit an appeal from your dashboard.");
+
+                return (true, null);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return (false, ErrorMessages.UserUpdateConflict);
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError(ex, "Failed to reject verification for user {UserId}.", userId);
+                return (false, ErrorMessages.ServerError);
+            }
         }
 
         public UserIndexViewModel GetIndexViewModel(

@@ -28,6 +28,10 @@ namespace ASI.Basecode.WebApp
             // Common
             this._services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+            // Cross-role notifications (in-app + pluggable email transport)
+            this._services.AddScoped<IEmailSender, LoggingEmailSender>();
+            this._services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+
             // Current operator identity (cookie claims, with session fallback)
             this._services.AddScoped<ICurrentUserService, CurrentUserService>();
 

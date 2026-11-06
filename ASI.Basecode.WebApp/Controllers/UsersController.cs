@@ -172,6 +172,41 @@ namespace ASI.Basecode.WebApp.Controllers
             return this.RedirectToAction(nameof(this.Index));
         }
 
+        /// <summary>
+        /// Pending Verifications queue (UNVERIFIED accounts) with a Rejected tab.
+        /// </summary>
+        public IActionResult Verifications(string tab = "pending", string search = null, int page = 1)
+        {
+            try
+            {
+                return this.View(this._userService.GetVerificationQueue(tab, search, page, 10));
+            }
+            catch (Exception ex)
+            {
+                this.HandleExceptionLog(ex, "Verifications");
+                this.TempData["ErrorMessage"] = "Unable to load the verification queue.";
+                return this.View(new VerificationQueueViewModel { Page = new PagedResult<UserListViewModel>(), Tab = "pending" });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Verify(long id, string returnTab = "pending")
+        {
+            var (success, error) = this._userService.Verify(id);
+            this.TempData[success ? "SuccessMessage" : "ErrorMessage"] = success ? "Account verified." : error;
+            return this.RedirectToAction(nameof(this.Verifications), new { tab = returnTab });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RejectVerification(long id, string reason)
+        {
+            var (success, error) = this._userService.RejectVerification(id, reason);
+            this.TempData[success ? "SuccessMessage" : "ErrorMessage"] = success ? "Verification rejected." : error;
+            return this.RedirectToAction(nameof(this.Verifications));
+        }
+
         private void PopulateFormSelectLists(long? roleId, long? departmentId, long? accountStatusId)
         {
             this.ViewBag.RoleOptions = this.ToSelectList(this._userService.GetRoleOptions(), roleId, "-- Select role --");

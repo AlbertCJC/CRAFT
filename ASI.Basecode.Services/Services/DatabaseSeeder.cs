@@ -36,13 +36,72 @@ namespace ASI.Basecode.Services.Services
             try
             {
                 this.EnsureAuthSchema();
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError(ex, "Database seeding failed while ensuring the auth schema.");
+            }
+
+            // Each feature schema step is isolated so one failure doesn't block the others.
+            this.RunSchemaStep("account lifecycle", this.EnsureAccountLifecycleSchema);
+
+            try
+            {
                 this.SeedCodebooks();
+                this.EnsureCodebookEntries();
                 this.SeedDemoData();
             }
             catch (Exception ex)
             {
                 // Never take the app down on seeding failure — surface it in the log instead.
                 this._logger.LogError(ex, "Database seeding failed.");
+            }
+        }
+
+        private void RunSchemaStep(string name, Action step)
+        {
+            try
+            {
+                step();
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError(ex, "Database schema step '{Step}' failed.", name);
+            }
+        }
+
+        /// <summary>Verification + provisioning + persisted lockout columns on <c>users</c>.</summary>
+        private void EnsureAccountLifecycleSchema()
+        {
+            this.DbContext.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('dbo.users', 'verification_note') IS NULL
+    ALTER TABLE dbo.users ADD verification_note nvarchar(500) NULL;
+
+IF COL_LENGTH('dbo.users', 'verified_at_utc') IS NULL
+    ALTER TABLE dbo.users ADD verified_at_utc datetime2 NULL;
+
+IF COL_LENGTH('dbo.users', 'verified_by_user_id') IS NULL
+    ALTER TABLE dbo.users ADD verified_by_user_id bigint NULL;");
+        }
+
+        /// <summary>
+        /// <see cref="SeedCodebooks"/> only fills empty tables; codes introduced later are added
+        /// individually so existing databases pick them up too.
+        /// </summary>
+        private void EnsureCodebookEntries()
+        {
+            var db = this.DbContext;
+            var changed = false;
+
+            if (!db.AccountStatuses.Any(s => s.Code == AccountStatusCodes.Rejected))
+            {
+                db.AccountStatuses.Add(new AccountStatus { Code = AccountStatusCodes.Rejected, Description = "Rejected" });
+                changed = true;
+            }
+
+            if (changed)
+            {
+                this._unitOfWork.SaveChanges();
             }
         }
 
