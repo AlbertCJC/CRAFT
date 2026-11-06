@@ -51,6 +51,16 @@ public partial class AllianceDbContext
             entity.Property(e => e.OverdueNotifiedAtUtc).HasColumnName("overdue_notified_at_utc");
         });
 
+        modelBuilder.Entity<ConditionInspection>(entity =>
+        {
+            entity.Property(e => e.GoodQuantity).HasColumnName("good_quantity");
+            entity.Property(e => e.DamagedQuantity).HasColumnName("damaged_quantity");
+            entity.Property(e => e.LostQuantity).HasColumnName("lost_quantity");
+            entity.Property(e => e.RepairCost).HasColumnType("decimal(12, 2)").HasColumnName("repair_cost");
+            entity.Property(e => e.PenaltyAmount).HasColumnType("decimal(12, 2)").HasColumnName("penalty_amount");
+            entity.Property(e => e.PenaltyNote).HasMaxLength(500).HasColumnName("penalty_note");
+        });
+
         modelBuilder.Entity<UserPreference>(entity =>
         {
             entity.HasKey(e => e.UserId);

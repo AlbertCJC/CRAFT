@@ -473,5 +473,32 @@ namespace ASI.Basecode.Resources.Messages {
                 return ResourceManager.GetString("AssignmentNotFound", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Good, damaged and lost quantities must add up to the inspected quantity..
+        /// </summary>
+        public static string InspectionOutcomeMismatch {
+            get {
+                return ResourceManager.GetString("InspectionOutcomeMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Inspected quantity can't exceed the units returned and not yet inspected..
+        /// </summary>
+        public static string InspectionQuantityInvalid {
+            get {
+                return ResourceManager.GetString("InspectionQuantityInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Repair cost and penalty can't be negative..
+        /// </summary>
+        public static string InspectionAmountInvalid {
+            get {
+                return ResourceManager.GetString("InspectionAmountInvalid", resourceCulture);
+            }
+        }
     }
 }

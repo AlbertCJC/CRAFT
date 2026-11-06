@@ -31,6 +31,7 @@ namespace ASI.Basecode.Data.Repositories
                 .Include(b => b.Status)
                 .Include(b => b.InspectionStatus)
                 .Include(b => b.Reservation)
+                .Include(b => b.BorrowingReturns)
                 .FirstOrDefault(b => b.BorrowingId == borrowingId);
         }
 

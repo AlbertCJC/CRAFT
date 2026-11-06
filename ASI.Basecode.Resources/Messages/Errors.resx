@@ -255,4 +255,13 @@
   <data name="AssignmentNotFound" xml:space="preserve">
     <value>The assignment no longer exists.</value>
   </data>
+  <data name="InspectionOutcomeMismatch" xml:space="preserve">
+    <value>Good, damaged and lost quantities must add up to the inspected quantity.</value>
+  </data>
+  <data name="InspectionQuantityInvalid" xml:space="preserve">
+    <value>Inspected quantity can't exceed the units returned and not yet inspected.</value>
+  </data>
+  <data name="InspectionAmountInvalid" xml:space="preserve">
+    <value>Repair cost and penalty can't be negative.</value>
+  </data>
 </root>

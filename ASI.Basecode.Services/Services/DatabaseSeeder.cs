@@ -103,7 +103,25 @@ IF COL_LENGTH('dbo.borrowings', 'due_reminder_sent_at_utc') IS NULL
     ALTER TABLE dbo.borrowings ADD due_reminder_sent_at_utc datetime2 NULL;
 
 IF COL_LENGTH('dbo.borrowings', 'overdue_notified_at_utc') IS NULL
-    ALTER TABLE dbo.borrowings ADD overdue_notified_at_utc datetime2 NULL;");
+    ALTER TABLE dbo.borrowings ADD overdue_notified_at_utc datetime2 NULL;
+
+IF COL_LENGTH('dbo.condition_inspections', 'good_quantity') IS NULL
+    ALTER TABLE dbo.condition_inspections ADD good_quantity int NULL;
+
+IF COL_LENGTH('dbo.condition_inspections', 'damaged_quantity') IS NULL
+    ALTER TABLE dbo.condition_inspections ADD damaged_quantity int NULL;
+
+IF COL_LENGTH('dbo.condition_inspections', 'lost_quantity') IS NULL
+    ALTER TABLE dbo.condition_inspections ADD lost_quantity int NULL;
+
+IF COL_LENGTH('dbo.condition_inspections', 'repair_cost') IS NULL
+    ALTER TABLE dbo.condition_inspections ADD repair_cost decimal(12, 2) NULL;
+
+IF COL_LENGTH('dbo.condition_inspections', 'penalty_amount') IS NULL
+    ALTER TABLE dbo.condition_inspections ADD penalty_amount decimal(12, 2) NULL;
+
+IF COL_LENGTH('dbo.condition_inspections', 'penalty_note') IS NULL
+    ALTER TABLE dbo.condition_inspections ADD penalty_note nvarchar(500) NULL;");
         }
 
         /// <summary>Custodian ownership (borrower / location / category) and reservation routing.</summary>
