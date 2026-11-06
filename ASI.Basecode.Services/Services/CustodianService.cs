@@ -471,7 +471,7 @@ namespace ASI.Basecode.Services.Services
                     Kind = "RELEASE",
                     Id = r.ReservationId,
                     Title = "Release " + r.ReservationNumber,
-                    Subtitle = r.BorrowerUser.FirstName + " " + r.BorrowerUser.LastName + " · " + r.ApprovedQuantity + " unit(s)",
+                    Subtitle = r.BorrowerUser.FirstName + " " + r.BorrowerUser.LastName + " · " + r.ApprovedQuantity.ToString() + " unit(s)",
                 })
                 .ToList());
             result.Matches.AddRange(this.DbContext.Borrowings.AsNoTracking()
